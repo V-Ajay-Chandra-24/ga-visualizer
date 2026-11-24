@@ -1,0 +1,2139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GA Visualizer — step through a Genetic Algorithm</title>
+<meta name="description" content="Interactive, step-by-step teaching tool for the Genetic Algorithm: roulette-wheel selection, crossover, mutation, with Goldberg's x² hand-calculation verified.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M9 6c0 7 14 7 14 14S9 19 9 26M23 6c0 7-14 7-14 14s14-1 14 6' stroke='%23fff' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f4f3ef; --surface:#fcfcfb; --surface-2:#f1f0eb; --border:#e2e0d8; --border-strong:#cfccc2;
+  --text:#0b0b0b; --text-2:#52514e; --muted:#7a7873;
+  --accent:#2a78d6; --accent-ink:#ffffff; --accent-soft:#e3eefb;
+  --s1:#2a78d6; --s2:#eb6834; --grid:#e9e7e0;
+  --good:#0f7a36; --good-soft:#e2f4e8; --bad:#c43232; --bad-soft:#fbe6e6; --warn-soft:#fdf3dc;
+  --bit1:#1f2a44; --bit1-ink:#ffffff; --bit0:#e6e4dc; --bit0-ink:#77756f;
+  --oa:#2a78d6; --ob:#eb6834; --flip:#e34948;
+  --shadow:0 1px 2px rgba(20,20,10,.05),0 4px 16px rgba(20,20,10,.05);
+  --radius:14px;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#111110; --surface:#1a1a19; --surface-2:#232321; --border:#33322f; --border-strong:#45443f;
+    --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
+    --accent:#3987e5; --accent-ink:#ffffff; --accent-soft:#1d2c40;
+    --s1:#3987e5; --s2:#d95926; --grid:#2a2a28;
+    --good:#4cc47a; --good-soft:#16301f; --bad:#ef7777; --bad-soft:#3a1c1c; --warn-soft:#33290f;
+    --bit1:#dbe4f5; --bit1-ink:#111111; --bit0:#2d2d2b; --bit0-ink:#8f8e86;
+    --oa:#3987e5; --ob:#d95926; --flip:#e66767;
+    --shadow:0 1px 2px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#111110; --surface:#1a1a19; --surface-2:#232321; --border:#33322f; --border-strong:#45443f;
+  --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
+  --accent:#3987e5; --accent-ink:#ffffff; --accent-soft:#1d2c40;
+  --s1:#3987e5; --s2:#d95926; --grid:#2a2a28;
+  --good:#4cc47a; --good-soft:#16301f; --bad:#ef7777; --bad-soft:#3a1c1c; --warn-soft:#33290f;
+  --bit1:#dbe4f5; --bit1-ink:#111111; --bit0:#2d2d2b; --bit0-ink:#8f8e86;
+  --oa:#3987e5; --ob:#d95926; --flip:#e66767;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Inter,sans-serif;-webkit-font-smoothing:antialiased}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{margin:0;line-height:1.25}
+h2{font-size:15px;font-weight:650}
+small{color:var(--muted)}
+code,.mono{font-family:var(--mono);font-size:.92em}
+
+/* ---------- top bar ---------- */
+.topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:10px 20px;padding-top:calc(10px + env(safe-area-inset-top,0px))}
+.topbar-inner{max-width:1560px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto}
+.brand svg{flex:none}
+.brand h1{font-size:17px;font-weight:700;letter-spacing:-.01em}
+.brand p{margin:0;color:var(--muted);font-size:12.5px}
+.tabs{display:flex;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:3px}
+.tabs button{border:0;background:none;padding:6px 14px;border-radius:7px;cursor:pointer;color:var(--text-2);font-weight:550}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+.top-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+/* ---------- buttons & inputs ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--border-strong);background:var(--surface);padding:7px 12px;border-radius:9px;cursor:pointer;font-weight:560;white-space:nowrap;transition:background .15s,border-color .15s,transform .05s}
+.btn:hover{background:var(--surface-2)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.good{border-color:color-mix(in srgb,var(--good) 55%,var(--border));color:var(--good)}
+.btn.sm{padding:4px 9px;font-size:12.5px;border-radius:7px}
+.btn svg{width:15px;height:15px}
+.switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-weight:560}
+.switch input{appearance:none;width:34px;height:20px;border-radius:20px;background:var(--border-strong);position:relative;cursor:pointer;transition:background .15s;margin:0}
+.switch input::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.switch input:checked{background:var(--accent)}
+.switch input:checked::after{left:16px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- layout ---------- */
+.layout{max-width:1560px;margin:0 auto;padding:18px 20px 40px;display:grid;grid-template-columns:310px minmax(0,1fr);gap:18px;align-items:start}
+.sidebar{display:flex;flex-direction:column;gap:14px;position:sticky;top:76px;max-height:calc(100vh - 90px);overflow:auto;padding-right:2px}
+.content{display:flex;flex-direction:column;gap:14px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);min-width:0}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.card-head small{font-size:12px}
+.viz-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr);gap:14px;align-items:start}
+.viz-side{display:flex;flex-direction:column;gap:14px;min-width:0}
+@media (max-width:1240px){.viz-grid{grid-template-columns:minmax(0,1fr)}.viz-side{display:grid;grid-template-columns:1fr 1fr}}
+@media (max-width:980px){.layout{grid-template-columns:minmax(0,1fr)}.sidebar{position:static;max-height:none}}
+@media (max-width:700px){.viz-side{grid-template-columns:minmax(0,1fr)}.layout{padding:12px 16px 32px}.topbar{padding-left:16px;padding-right:16px}.brand p{display:none}}
+
+/* ---------- sidebar controls ---------- */
+.field{display:grid;gap:4px;margin-bottom:11px}
+.field:last-child{margin-bottom:0}
+.field label,.lbl{font-size:12.5px;font-weight:600;color:var(--text-2);display:flex;justify-content:space-between;gap:8px}
+.field output{font-family:var(--mono);color:var(--text);font-weight:600}
+select,input[type=number],input[type=text],textarea{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:6px 9px}
+textarea{font-family:var(--mono);font-size:12.5px;resize:vertical;min-height:36px}
+input[type=range]{width:100%;accent-color:var(--accent);margin:2px 0}
+.row{display:flex;gap:8px;align-items:center}
+.row > *{flex:1}
+.field label.check,.check{display:flex;justify-content:flex-start;align-items:center;gap:8px;font-weight:560;cursor:pointer}
+.check input{accent-color:var(--accent);width:16px;height:16px;margin:0}
+.desc{color:var(--text-2);font-size:12.5px;margin:6px 0 0}
+.controls{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.controls .btn{padding:8px 4px}
+.controls .btn.wide{grid-column:span 4}
+.kbd-hint{font-size:11.5px;color:var(--muted);margin-top:8px}
+kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:4px;padding:0 4px;background:var(--surface-2)}
+details.card > summary{cursor:pointer;font-weight:650;font-size:15px;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px}
+details.card > summary::-webkit-details-marker{display:none}
+details.card > summary::after{content:"▸";color:var(--muted);transition:transform .15s}
+details.card[open] > summary::after{transform:rotate(90deg)}
+details.card[open] > summary{margin-bottom:10px}
+.status{font-size:12px;border-radius:8px;padding:6px 9px;background:var(--surface-2);color:var(--text-2);margin-top:8px}
+.status.err{background:var(--bad-soft);color:var(--bad)}
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:3px;font-size:12.5px}
+.checks li{display:flex;gap:7px;align-items:baseline}
+.checks li .m{font-weight:700;flex:none;width:14px}
+.checks li.ok .m{color:var(--good)}
+.checks li.bad .m{color:var(--bad)}
+.checks li small{display:block}
+.pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:650;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
+.pill.ok{background:var(--good-soft);color:var(--good);border-color:transparent}
+.pill.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+
+/* ---------- phase bar & caption ---------- */
+.phasebar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.gen-badge{font-weight:700;font-size:15px;white-space:nowrap}
+.phases{display:flex;gap:4px;flex:1;min-width:280px;flex-wrap:wrap}
+.phase{flex:1;min-width:90px;display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:9px;background:var(--surface-2);color:var(--muted);font-weight:600;font-size:12.5px;border:1px solid transparent;transition:all .2s}
+.phase .n{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--border);color:var(--text-2);font-size:11px;flex:none}
+.phase.done{color:var(--text-2)}
+.phase.done .n{background:var(--good-soft);color:var(--good)}
+.phase.active{background:var(--accent-soft);color:var(--text);border-color:color-mix(in srgb,var(--accent) 45%,transparent)}
+.phase.active .n{background:var(--accent);color:var(--accent-ink)}
+.stats{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--text-2)}
+.stats b{color:var(--text);font-family:var(--mono);font-weight:650}
+.caption{font-size:15.5px;line-height:1.55;margin:0}
+.caption b{font-weight:650}
+.why{margin-top:12px;border-top:1px dashed var(--border-strong);padding-top:12px;color:var(--text-2);font-size:14px}
+.why h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin-bottom:6px}
+.why p{margin:0 0 8px}
+.why p:last-child{margin-bottom:0}
+.formula{font-family:var(--mono);background:var(--surface-2);border-radius:6px;padding:1px 6px;color:var(--text)}
+
+/* ---------- tables ---------- */
+.table-wrap{overflow:auto;max-height:560px;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:6px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)}
+th{position:sticky;top:0;background:var(--surface-2);font-size:12px;font-weight:650;color:var(--text-2);z-index:1}
+th.l,td.l{text-align:left}
+td{font-family:var(--mono);font-size:13px}
+tbody tr:hover td{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+tfoot td{background:var(--surface-2);font-weight:650}
+tfoot td.lab{font-family:inherit;text-align:left;color:var(--text-2)}
+td.hl{background:color-mix(in srgb,var(--accent) 10%,transparent);font-weight:700}
+tr.best td{font-weight:700}
+tr.zero td{color:var(--muted)}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.tag{display:inline-block;font-family:system-ui,sans-serif;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--accent-soft);color:var(--accent);margin-left:6px;vertical-align:1px}
+.tag.man{background:var(--warn-soft);color:var(--text-2)}
+.tag.elite{background:var(--good-soft);color:var(--good)}
+.pairinfo{font-family:system-ui,sans-serif;font-size:12px;text-align:left;white-space:normal;min-width:140px;color:var(--text-2);border-right:1px solid var(--border)}
+.pairinfo b{color:var(--text)}
+tr.pair-end td{border-bottom:2px solid var(--border-strong)}
+.subtable-title{font-weight:650;font-size:13px;margin:14px 0 6px;color:var(--text-2)}
+.sumline{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12.5px;color:var(--text-2)}
+.sumline b{font-family:var(--mono);color:var(--text)}
+
+/* bits */
+.bits{display:inline-flex;gap:2px;align-items:center;vertical-align:middle}
+.bits i{font-style:normal;width:19px;height:22px;display:grid;place-items:center;border-radius:4px;font-size:12px;font-weight:700;font-family:var(--mono);border-bottom:3px solid transparent;transition:background .3s}
+.bits i.b1{background:var(--bit1);color:var(--bit1-ink)}
+.bits i.b0{background:var(--bit0);color:var(--bit0-ink)}
+.bits i.oa{border-bottom-color:var(--oa)}
+.bits i.ob{border-bottom-color:var(--ob)}
+.bits.compact{gap:1px}
+.bits.compact i{width:12px;height:19px;font-size:9.5px;border-radius:3px}
+.bits.dense{gap:1px}
+.bits.dense i{width:8px;height:18px;border-radius:2px;border-bottom-width:2px}
+.bits i.flip{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--flip);animation:flip .9s ease-out 1}
+.bits.dense i.flip{box-shadow:0 0 0 1px var(--surface),0 0 0 2px var(--flip)}
+.bits .cut{width:2px;height:28px;background:var(--text);border-radius:2px;margin:0 3px;position:relative}
+.bits i.tail{animation:slide .7s cubic-bezier(.2,.8,.2,1) 1}
+@keyframes flip{0%{transform:scale(1.5) rotateX(180deg)}100%{transform:none}}
+@keyframes slide{0%{transform:translateY(-10px);opacity:.2}100%{transform:none;opacity:1}}
+@media (prefers-reduced-motion: reduce){.bits i.flip,.bits i.tail{animation:none}}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-2);align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend .ln{width:18px;height:0;border-top:2px solid}
+.legend .ln.dash{border-top-style:dashed}
+.legend .ul{width:16px;height:12px;border-radius:3px;background:var(--bit0);border-bottom:3px solid}
+.legend .ring{width:12px;height:12px;border-radius:3px;background:var(--bit0);box-shadow:0 0 0 2px var(--flip)}
+.legend .dot{width:10px;height:10px;border-radius:50%}
+
+/* ---------- viz panels ---------- */
+.canvas-wrap{position:relative}
+canvas{display:block;width:100%}
+#wheel{height:280px}
+#curve{height:240px}
+#chart{height:290px}
+#cmpChart{height:360px}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--border-strong);border-radius:8px;padding:6px 9px;font-size:12px;box-shadow:var(--shadow);white-space:nowrap;z-index:5}
+.tip b{font-family:var(--mono)}
+.tip .r{display:flex;align-items:center;gap:6px}
+.spinlog{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;max-height:140px;overflow:auto}
+.chip{font-family:var(--mono);font-size:11.5px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:2px 7px;color:var(--text-2)}
+.chip b{color:var(--text)}
+.chip.now{border-color:var(--accent);background:var(--accent-soft);color:var(--text)}
+.readout{font-size:13px;text-align:center;min-height:20px;margin-top:4px;color:var(--text-2)}
+.readout b{color:var(--text);font-family:var(--mono)}
+.tourn{display:grid;gap:4px;max-height:330px;overflow:auto;font-size:12.5px}
+.tourn .t{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:4px 6px;border-radius:7px;background:var(--surface-2)}
+.tourn .t .vs{color:var(--muted)}
+.tourn .t .w{font-weight:700}
+.tourn .t .c{font-family:var(--mono)}
+.tourn .t .c.lost{color:var(--muted);text-decoration:line-through}
+.pbar{display:grid;grid-template-columns:42px 1fr 52px;gap:8px;align-items:center;font-size:12px;font-family:var(--mono)}
+.pbar .bar{height:10px;border-radius:0 4px 4px 0;background:var(--s1)}
+.note{font-size:12px;color:var(--muted);margin-top:6px}
+
+/* ---------- verification ---------- */
+.verify{border-color:color-mix(in srgb,var(--good) 40%,var(--border))}
+.verify .vt td{font-family:inherit}
+.vt th,.vt td{padding:5px 7px}
+td.vc{position:relative;padding-right:25px}
+td.vc b{font-family:var(--mono);font-weight:650}
+td.vc small{display:block;font-size:10.5px;font-family:var(--mono)}
+td.vc .mark{position:absolute;right:7px;top:50%;transform:translateY(-50%);width:17px;height:17px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800}
+td.vc.ok .mark{background:var(--good-soft);color:var(--good)}
+td.vc.bad{background:var(--bad-soft)}
+td.vc.bad .mark{background:var(--bad);color:#fff}
+td.vc.pend b{color:var(--muted)}
+.vgrid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px}
+@media (max-width:1480px){.vgrid{grid-template-columns:minmax(0,1fr)}}
+.warnbox{background:var(--warn-soft);border-radius:8px;padding:7px 10px;font-size:12.5px;color:var(--text-2);margin-bottom:10px}
+
+/* ---------- compare ---------- */
+.cmp{max-width:1560px;margin:0 auto;padding:18px 20px 40px;display:grid;gap:14px}
+.cmp-params{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:900px){.cmp-params{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:700px){.cmp{padding:12px 16px 32px}}
+.side-a{border-top:4px solid var(--s1)}
+.side-b{border-top:4px solid var(--s2)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+footer{max-width:1560px;margin:0 auto;padding:0 20px 30px;color:var(--muted);font-size:12px}
+
+/* ---------- lecture mode ---------- */
+.lbits .seg{width:7px}
+.lbits .cut + .seg{display:none}
+.enc{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:12.5px;align-items:baseline}
+.enc span{color:var(--text-2)}
+.enc b{font-family:var(--mono);font-weight:600;font-size:12px}
+.sheet td{font-family:inherit;padding:5px 6px;vertical-align:middle}
+.sheet td:first-child{font-weight:650;white-space:nowrap;text-align:left}
+.sheet input{min-width:170px;font-family:var(--mono);font-size:12.5px;padding:5px 8px}
+.sheet input.bad,textarea.bad{border-color:var(--bad);background:var(--bad-soft)}
+.lctl{position:sticky;top:70px;z-index:6}
+.lctl .row{flex-wrap:wrap}
+.lctl .row > *{flex:none}
+.lprog{display:flex;gap:3px;margin-top:10px}
+.lprog i{flex:1;height:6px;border-radius:3px;background:var(--border)}
+.lprog i.on{background:var(--accent)}
+.lprog i.gap{margin-left:6px}
+.lgen{display:flex;flex-direction:column;gap:16px}
+.lgen h2.gh{font-size:17px}
+.lstep h3{font-size:14px;margin:0 0 8px;display:flex;gap:8px;align-items:center}
+.lstep h3 .n{width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:12px;flex:none}
+.lstep.new{animation:fadein .5s ease-out}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.lnote{font-size:13px;color:var(--text-2);margin:8px 0 0}
+.lnote code{color:var(--text)}
+.lsel{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.lsel .table-wrap{flex:1;min-width:0}
+.lpie{flex:none}
+.tag.rng{background:var(--warn-soft);color:var(--text-2)}
+td.why{font-family:system-ui,sans-serif;font-size:12px;color:var(--text-2);text-align:left}
+.vsec{border-top:1px solid var(--border);padding-top:8px;margin-top:8px}
+.vsec > summary{cursor:pointer;font-weight:650;font-size:13.5px;display:flex;gap:8px;align-items:center}
+.vr{display:grid;grid-template-columns:120px 1fr;gap:8px;align-items:start;padding:4px 0;border-bottom:1px dashed var(--border)}
+.vr .vl{font-size:12.5px;font-weight:600;color:var(--text-2);padding-top:3px}
+.vchips{display:flex;flex-wrap:wrap;gap:4px}
+.vchip{display:inline-flex;flex-direction:column;font-family:var(--mono);font-size:12px;border-radius:6px;padding:2px 7px;background:var(--good-soft);color:var(--text)}
+.vchip b{font-weight:600}
+.vchip b::after{content:" ✓";color:var(--good);font-weight:800}
+.vchip.bad{background:var(--bad-soft)}
+.vchip.bad b::after{content:" ✗";color:var(--bad)}
+.vchip small{font-size:10.5px;color:var(--bad)}
+@media (max-width:700px){.vr{grid-template-columns:minmax(0,1fr)}.lctl{top:0}}
+</style>
+</head>
+<body>
+<noscript><p style="padding:20px">This tool needs JavaScript enabled.</p></noscript>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="var(--accent)"/><path d="M9 6c0 7 14 7 14 14S9 19 9 26M23 6c0 7-14 7-14 14s14-1 14 6" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+      <div><h1>GA Visualizer</h1><p>Step through a Genetic Algorithm, one phase at a time</p></div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="View">
+      <button role="tab" id="tabExplore" aria-selected="true" data-tab="explore">Explore</button>
+      <button role="tab" id="tabCompare" aria-selected="false" data-tab="compare">Compare runs</button>
+      <button role="tab" id="tabLecture" aria-selected="false" data-tab="lecture">Lecture mode</button>
+    </nav>
+    <div class="top-actions">
+      <button class="btn good" id="verifyBtn" title="Load Goldberg's textbook example with its fixed numbers">✓ Hand-calc verification</button>
+      <label class="switch" title="Show a deeper beginner-friendly explanation of each phase"><input type="checkbox" id="whyToggle"> Why?</label>
+    </div>
+  </div>
+</header>
+
+<!-- ======================= EXPLORE ======================= -->
+<main id="explore" class="layout">
+  <aside class="sidebar" aria-label="Settings">
+    <section class="card">
+      <div class="field">
+        <label for="problem">Problem</label>
+        <select id="problem">
+          <option value="goldberg">Goldberg: maximise f(x) = x², x ∈ 0..31</option>
+          <option value="onemax">OneMax: maximise the number of 1s</option>
+          <option value="multipeak">Multi-peak: f(x) = x·sin(10πx) + 2</option>
+        </select>
+        <p class="desc" id="problemDesc"></p>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Playback controls">
+      <div class="controls">
+        <button class="btn primary" id="playBtn" title="Play / Pause (Space)">▶ Play</button>
+        <button class="btn" id="stepBtn" title="Next phase (→)">Step ›</button>
+        <button class="btn" id="backBtn" title="Previous phase (←)">‹ Back</button>
+        <button class="btn" id="resetBtn" title="Reset (R)">↺ Reset</button>
+      </div>
+      <div class="field" style="margin-top:12px">
+        <label for="speed">Speed <output id="speedOut"></output></label>
+        <input type="range" id="speed" min="1" max="10" value="5">
+      </div>
+      <div class="kbd-hint"><kbd>Space</kbd> play/pause · <kbd>→</kbd> step · <kbd>←</kbd> back · <kbd>R</kbd> reset</div>
+    </section>
+
+    <section class="card" aria-label="Parameters">
+      <div class="card-head"><h2>Parameters</h2><small>changes reset the run</small></div>
+      <div class="field"><label for="popSize">Population size <output id="popSizeOut"></output></label><input type="range" id="popSize" min="2" max="200" step="1" value="4"></div>
+      <div class="field"><label for="chromLen">Chromosome length (bits) <output id="chromLenOut"></output></label><input type="range" id="chromLen" min="5" max="5" value="5"></div>
+      <div class="field"><label for="pc"><span>Crossover rate p<sub>c</sub></span> <output id="pcOut"></output></label><input type="range" id="pc" min="0" max="1" step="0.01" value="0.7"></div>
+      <div class="field"><label for="pm"><span>Mutation rate p<sub>m</sub> (per bit)</span> <output id="pmOut"></output></label><input type="range" id="pm" min="0" max="0.2" step="0.001" value="0.01"></div>
+      <div class="field"><label for="selection">Selection method</label>
+        <select id="selection"><option value="roulette">Roulette wheel (fitness-proportionate)</option><option value="tournament">Tournament</option></select></div>
+      <div class="field" id="tkField" hidden><label for="tk">Tournament size k <output id="tkOut"></output></label><input type="range" id="tk" min="2" max="7" value="2"></div>
+      <div class="field"><label class="check"><input type="checkbox" id="elitism"> Elitism (keep the best parent)</label></div>
+      <div class="field"><label for="seed">Random seed</label>
+        <div class="row"><input type="number" id="seed" value="42" step="1"><button class="btn sm" id="diceBtn" style="flex:none" title="New random seed">🎲 New</button></div></div>
+      <div class="field"><label for="maxGen">Stop Play after generation</label><input type="number" id="maxGen" value="50" min="1" max="5000"></div>
+    </section>
+
+    <details class="card" id="manualCard">
+      <summary>Manual overrides <span class="pill" id="manualPill">off</span></summary>
+      <p class="desc" style="margin-top:0">Reproduce a hand calculation. Values are used in order; when a list runs out the seeded RNG takes over. Click <b>Apply</b> to reset with them.</p>
+      <div class="field"><label for="mInit">Initial population <small>(bit strings)</small></label><textarea id="mInit" rows="2" placeholder="e.g. 01101 11000 01000 10011"></textarea></div>
+      <div class="field"><label for="mSpins">Roulette random numbers r ∈ [0,1)</label><textarea id="mSpins" rows="1" placeholder="e.g. 0.12, 0.47, 0.59, 0.86"></textarea></div>
+      <div class="field"><label for="mCuts">Crossover points, one per pair <small>(0 = no crossover)</small></label><textarea id="mCuts" rows="1" placeholder="e.g. 4, 2"></textarea></div>
+      <div class="field"><label for="mMuts">Mutation flips, gen 0 <small>(child:bit, 1-based)</small></label><textarea id="mMuts" rows="1" placeholder="e.g. 3:2, 1:5"></textarea></div>
+      <div class="row"><button class="btn primary sm" id="applyManual">Apply &amp; reset</button><button class="btn sm" id="clearManual">Clear</button></div>
+      <div class="status" id="manualStatus">No overrides — everything comes from the seeded RNG.</div>
+    </details>
+
+    <details class="card" id="checksCard">
+      <summary>Self-checks <span class="pill" id="checkPill">…</span></summary>
+      <p class="desc" style="margin-top:0">Unit-style tests run on page load against the engine (also logged to the browser console).</p>
+      <ul class="checks" id="checkList"></ul>
+      <button class="btn sm" id="rerunChecks" style="margin-top:10px">Run again</button>
+    </details>
+  </aside>
+
+  <section class="content">
+    <div class="card">
+      <div class="phasebar">
+        <div class="gen-badge" id="genBadge">Generation 0</div>
+        <div class="phases" id="phases"></div>
+      </div>
+      <div class="stats" id="stats" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card" aria-live="polite">
+      <p class="caption" id="caption"></p>
+      <div class="why" id="why" hidden></div>
+    </div>
+
+    <section class="card verify" id="verifyCard" hidden>
+      <div class="card-head"><h2>Hand-calc verification — Goldberg (1989), Table 1.1</h2><span class="pill" id="verifyPill"></span></div>
+      <div id="verifyWarn"></div>
+      <div class="vgrid">
+        <div><div class="subtable-title" style="margin-top:0">Generation 0: evaluation &amp; selection</div><div class="table-wrap"><table class="vt" id="vt1"></table></div></div>
+        <div><div class="subtable-title" style="margin-top:0">Mating pool, crossover &amp; new population</div><div class="table-wrap"><table class="vt" id="vt2"></table></div></div>
+      </div>
+      <p class="note">Each cell shows the value computed by this page (bold) and the textbook value (small). Step through generation 0 to fill in the ticks. The roulette random numbers 0.12, 0.47, 0.59, 0.86 are not printed in the book; they were picked so the spins land on the book's mating pool (counts 1, 2, 0, 1).</p>
+    </section>
+
+    <div class="viz-grid">
+      <section class="card">
+        <div class="card-head"><h2 id="tableTitle">Population</h2><div class="legend" id="tableLegend"></div></div>
+        <div id="tableHost"></div>
+      </section>
+      <div class="viz-side">
+        <section class="card">
+          <div class="card-head"><h2 id="selTitle">Roulette wheel</h2><small id="selSub"></small></div>
+          <div id="wheelBox" class="canvas-wrap"><canvas id="wheel" aria-label="Roulette wheel"></canvas><div class="readout" id="readout"></div><div class="spinlog" id="spinlog"></div></div>
+          <div id="tournBox" hidden></div>
+        </section>
+        <section class="card">
+          <div class="card-head"><h2 id="curveTitle">Population on f(x)</h2><div class="legend" id="curveLegend"></div></div>
+          <div class="canvas-wrap"><canvas id="curve" aria-label="Population plotted on the fitness function"></canvas><div class="tip" id="curveTip" hidden></div></div>
+        </section>
+      </div>
+    </div>
+
+    <section class="card">
+      <div class="card-head"><h2>Fitness over generations</h2><div class="legend" id="chartLegend"></div></div>
+      <div class="canvas-wrap"><canvas id="chart" aria-label="Best and average fitness per generation"></canvas><div class="tip" id="chartTip" hidden></div></div>
+    </section>
+  </section>
+</main>
+
+<!-- ======================= COMPARE ======================= -->
+<main id="compare" class="cmp" hidden>
+  <div class="cmp-params">
+    <section class="card">
+      <div class="card-head"><h2>Shared settings</h2></div>
+      <div class="field"><label for="cProblem">Problem</label>
+        <select id="cProblem"><option value="goldberg">Goldberg x² (5 bits)</option><option value="onemax">OneMax</option><option value="multipeak">Multi-peak function</option></select></div>
+      <div class="two">
+        <div class="field"><label for="cL">Chromosome bits</label><input type="number" id="cL" value="20" min="4" max="64"></div>
+        <div class="field"><label for="cSeed">Seed</label><input type="number" id="cSeed" value="42"></div>
+        <div class="field"><label for="cGens">Generations</label><input type="number" id="cGens" value="60" min="1" max="500"></div>
+        <div class="field"><label for="cRuns">Runs to average</label><input type="number" id="cRuns" value="1" min="1" max="30"></div>
+      </div>
+      <p class="desc">Both settings use the <b>same seed</b>, so with equal population sizes they start from the identical initial population. With several runs, run <i>i</i> uses seed + <i>i</i> for both sides and the curves are averaged.</p>
+      <button class="btn primary" id="cRun" style="width:100%;margin-top:10px">Run both ▶</button>
+    </section>
+    <section class="card side-a" id="sideA"></section>
+    <section class="card side-b" id="sideB"></section>
+  </div>
+  <section class="card">
+    <div class="card-head"><h2>Best &amp; average fitness: A vs B</h2><div class="legend" id="cmpLegend"></div></div>
+    <div class="canvas-wrap"><canvas id="cmpChart" aria-label="Comparison chart"></canvas><div class="tip" id="cmpTip" hidden></div></div>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Summary</h2><small id="cmpTime"></small></div>
+    <div class="table-wrap"><table id="cmpTable"></table></div>
+  </section>
+</main>
+
+<!-- ======================= LECTURE MODE ======================= -->
+<main id="lecture" class="layout" hidden>
+  <aside class="sidebar" aria-label="Lecture settings">
+    <section class="card">
+      <div class="field">
+        <label for="lPreset">Example from the lecture notes</label>
+        <select id="lPreset">
+          <optgroup label="Single variable">
+            <option value="ex1-4">Ex. 1 · min x² − 8x + 20 · 4-bit</option>
+            <option value="ex1-5">Ex. 1 · min x² − 8x + 20 · 5-bit</option>
+            <option value="ex2-4">Ex. 2 · min x² + 2x + 3 · 4-bit</option>
+            <option value="ex2-5">Ex. 2 · min x² + 2x + 3 · 5-bit</option>
+            <option value="ex3-4">Ex. 3 · max 15x − x² · 4-bit</option>
+            <option value="ex3-5">Ex. 3 · max 15x − x² · 5-bit</option>
+            <option value="ex4-4">Ex. 4 · max −x² + 2x + 50 · 4-bit</option>
+            <option value="ex4-5">Ex. 4 · max −x² + 2x + 50 · 5-bit</option>
+          </optgroup>
+          <optgroup label="Two variables (concatenated bits)">
+            <option value="mv1-4">Multi Ex. 1 · min (x₁−3)² + (x₂−5)² + 2 · 4+4 bits</option>
+            <option value="mv1-5">Multi Ex. 1 · min (x₁−3)² + (x₂−5)² + 2 · 5+5 bits</option>
+          </optgroup>
+        </select>
+        <p class="desc" id="lDesc"></p>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-head"><h2>Settings</h2><span class="pill" id="lSetPill">as in notes</span></div>
+      <div class="two">
+        <div class="field"><label for="lN">Population N</label><input type="number" id="lN" min="2" max="8" value="4"></div>
+        <div class="field"><label for="lG">Generations G</label><input type="number" id="lG" min="1" max="8" value="3"></div>
+        <div class="field"><label for="lPc"><span>p<sub>c</sub></span></label><input type="number" id="lPc" min="0" max="1" step="0.05" value="0.8"></div>
+        <div class="field"><label for="lPm"><span>p<sub>m</sub> (per bit)</span></label><input type="number" id="lPm" min="0" max="1" step="0.01" value="0.05"></div>
+        <div class="field"><label for="lXmin"><span>x<sub>min</sub></span></label><input type="number" id="lXmin" step="any"></div>
+        <div class="field"><label for="lXmax"><span>x<sub>max</sub></span></label><input type="number" id="lXmax" step="any"></div>
+        <div class="field"><label for="lM" id="lMLabel">Bits L</label><input type="number" id="lM" min="2" max="10"></div>
+        <div class="field"><label for="lSeed">Seed for blanks</label><input type="number" id="lSeed" value="1"></div>
+      </div>
+      <p class="desc">Roulette wheel: each spin selects the <b>first string with q<sub>i</sub> ≥ r</b>. Single-point crossover on pairs (1, 2), (3, 4): cross if r<sub>c</sub> &lt; p<sub>c</sub>. Bit-flip mutation: flip if r<sub>m</sub> &lt; p<sub>m</sub>.</p>
+    </section>
+    <section class="card">
+      <div class="card-head"><h2>Encoding</h2></div>
+      <div id="lEnc"></div>
+      <div class="field" style="margin-top:12px"><label for="lDec">Decode a string</label><input type="text" id="lDec" class="mono" placeholder="e.g. 0111" autocomplete="off"></div>
+      <div id="lDecOut" class="lnote"></div>
+    </section>
+  </aside>
+
+  <section class="content">
+    <section class="card">
+      <div class="card-head"><h2>Random numbers (exam sheet)</h2>
+        <div class="row" style="flex:none;gap:6px;flex-wrap:wrap"><button class="btn sm good" id="lLoadNotes">Load notes' numbers</button><button class="btn sm" id="lClear">Clear</button></div></div>
+      <p class="desc" style="margin-top:0">Type the numbers you are given, exactly as in an exam. Any blank cell is filled from the seeded RNG (rounded to 3 decimals) and marked <span class="tag rng">rng</span> in the tables. Mutation: list the flipped bits as <code>child:bit=r_m</code> (bit counted from the left), write <code>none</code> for no flips, or leave the cell blank to draw r<sub>m</sub> for every bit.</p>
+      <div class="field"><label for="lInit">Initial population (Generation 1)</label><textarea id="lInit" rows="1" placeholder="e.g. 0111, 1010, 0001, 1000"></textarea></div>
+      <div class="table-wrap"><table class="sheet" id="lSheet"></table></div>
+      <div class="status" id="lStatus"></div>
+    </section>
+
+    <section class="card lctl">
+      <div class="phasebar">
+        <div class="gen-badge" id="lBadge"></div>
+        <div class="row" style="margin-left:auto;gap:6px">
+          <button class="btn" id="lPrev" title="Previous step (←)">‹ Back</button>
+          <button class="btn primary" id="lNext" title="Next step (→)">Next step ›</button>
+          <button class="btn" id="lAll">Show all</button>
+          <button class="btn" id="lRestart">↺ Restart</button>
+        </div>
+      </div>
+      <div class="lprog" id="lProg"></div>
+    </section>
+
+    <section class="card verify" id="lVerify" hidden></section>
+    <div id="lOut" class="lgen"></div>
+  </section>
+</main>
+
+<footer>Zero-dependency, single-file. The random numbers come from a seeded mulberry32 generator, so a given seed always gives the same run.</footer>
+
+<script>
+'use strict';
+/* =====================================================================
+   1. Seeded RNG (mulberry32). State is one uint32 stored on the GA state,
+      so snapshots (Step Back) restore the RNG exactly.
+   ===================================================================== */
+function seedToState(seed){
+  let h = ((Number(seed)|0) ^ 0x9E3779B9) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x85EBCA6B);
+  h = Math.imul(h ^ (h >>> 13), 0xC2B2AE35);
+  return (h ^ (h >>> 16)) >>> 0;
+}
+function rngNext(st){
+  st.rng = (st.rng + 0x6D2B79F5) >>> 0;
+  let t = st.rng;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+
+/* =====================================================================
+   2. Problems
+   ===================================================================== */
+const MP_LO = -1, MP_HI = 2;
+const mpF = x => x * Math.sin(10 * Math.PI * x) + 2;
+const mpOptCache = {};
+const PROBLEMS = {
+  goldberg: {
+    minL:5, maxL:5, defL:5, defN:4, kind:'curve', xName:'x', fName:'f(x) = x²',
+    desc:'From Goldberg (1989), <i>Genetic Algorithms in Search, Optimization &amp; Machine Learning</i>, ch. 1. Each 5-bit string is an unsigned integer x ∈ 0..31; fitness is x². The optimum is 11111 → 961.',
+    decode: b => parseInt(b, 2),
+    f: x => x * x,
+    domain: () => [0, 31],
+    optimum: () => 961,
+    fmtX: x => String(x), fmtF: f => String(f),
+  },
+  onemax: {
+    minL:4, maxL:64, defL:20, defN:20, kind:'hist', xName:'# of 1s', fName:'f = number of 1s',
+    desc:'Maximise the number of 1s in an L-bit string. Every bit counts on its own, so it is the simplest benchmark. The optimum is all ones (f = L).',
+    decode: b => { let c = 0; for (let i = 0; i < b.length; i++) if (b[i] === '1') c++; return c; },
+    f: x => x,
+    optimum: L => L,
+    fmtX: x => String(x), fmtF: f => String(f),
+  },
+  multipeak: {
+    minL:6, maxL:24, defL:12, defN:20, kind:'curve', xName:'x', fName:'f(x) = x·sin(10πx) + 2',
+    desc:'Maximise f(x) = x·sin(10πx) + 2 on x ∈ [−1, 2]. x is decoded linearly from L bits: x = −1 + 3·int(bits)/(2<sup>L</sup>−1). There are many local peaks; the global one is near x ≈ 1.85 (f ≈ 3.85).',
+    decode: (b, L) => MP_LO + (MP_HI - MP_LO) * parseInt(b, 2) / (Math.pow(2, L) - 1),
+    f: mpF,
+    domain: () => [MP_LO, MP_HI],
+    optimum: L => {
+      if (mpOptCache[L] != null) return mpOptCache[L];
+      const n = Math.pow(2, Math.min(L, 20)) - 1; let best = -Infinity;
+      for (let i = 0; i <= n; i++) { const v = mpF(MP_LO + (MP_HI - MP_LO) * i / n); if (v > best) best = v; }
+      return (mpOptCache[L] = best);
+    },
+    fmtX: x => x.toFixed(4), fmtF: f => f.toFixed(3),
+  },
+};
+function fmtAvg(problem, v){ return problem === 'multipeak' ? v.toFixed(3) : String(+v.toFixed(2)); }
+
+/* =====================================================================
+   3. GA engine: pure functions over a plain, cloneable state object
+   ===================================================================== */
+const PHASES = ['evaluate','select','crossover','mutate','replace'];
+const PHASE_LABEL = {evaluate:'Evaluate fitness', select:'Selection', crossover:'Crossover', mutate:'Mutation', replace:'New generation'};
+
+function evaluate(pop, P){
+  const prob = PROBLEMS[P.problem], N = pop.length;
+  const x = pop.map(s => prob.decode(s, P.L));
+  const f = x.map(v => prob.f(v, P.L));
+  let sum = 0, max = -Infinity, min = Infinity, best = 0;
+  f.forEach((v, i) => { sum += v; if (v > max) { max = v; best = i; } if (v < min) min = v; });
+  const avg = sum / N;
+  const p = P.selection === 'tournament' ? tournamentProbs(f, P.k)
+          : (sum > 0 ? f.map(v => v / sum) : f.map(() => 1 / N));
+  const exp = p.map(v => v * N);
+  return {x, f, p, exp, sum, avg, max, min, best};
+}
+
+/* P(individual wins a size-k tournament drawn with replacement). Ties share their group's probability. */
+function tournamentProbs(f, k){
+  const N = f.length, order = f.map((_, i) => i).sort((a, b) => f[b] - f[a]), p = new Array(N);
+  let r = 0;
+  while (r < N) {
+    let e = r; while (e + 1 < N && f[order[e + 1]] === f[order[r]]) e++;
+    const tot = (Math.pow(N - r, k) - Math.pow(N - e - 1, k)) / Math.pow(N, k);
+    for (let j = r; j <= e; j++) p[order[j]] = tot / (e - r + 1);
+    r = e + 1;
+  }
+  return p;
+}
+
+function createState(P, M = {}){
+  const st = {
+    P, rng: seedToState(P.seed), gen: 0, phase: 'init', pop: [], init0: null,
+    ev: null, sel: null, cx: null, mu: null, rep: null, hist: [], best: null, first: {}, evals: 0,
+    man: { spins: M.spins || [], cuts: M.cuts || [], muts: M.muts || [], sp: 0, cp: 0, mutUsed: false,
+           initManual: !!(M.initPop && M.initPop.length) },
+  };
+  if (st.man.initManual) st.pop = M.initPop.slice();
+  else for (let i = 0; i < P.N; i++) { let s = ''; for (let j = 0; j < P.L; j++) s += rngNext(st) < 0.5 ? '1' : '0'; st.pop.push(s); }
+  st.init0 = st.pop.slice();
+  return st;
+}
+
+function doSelect(st){
+  const P = st.P, ev = st.ev, N = st.pop.length, picks = [], counts = new Array(N).fill(0);
+  if (P.selection === 'roulette') {
+    const cum = []; let c = 0; for (const p of ev.p) { c += p; cum.push(c); } cum[N - 1] = 1;
+    for (let s = 0; s < N; s++) {
+      let r, src;
+      if (st.man.sp < st.man.spins.length) { r = st.man.spins[st.man.sp++]; src = 'manual'; }
+      else { r = rngNext(st); src = 'rng'; }
+      let idx = cum.findIndex(v => r < v); if (idx < 0) idx = N - 1;
+      picks.push({idx, r, src}); counts[idx]++;
+    }
+    return {method: 'roulette', picks, counts, cum, pool: picks.map(p => st.pop[p.idx])};
+  }
+  for (let s = 0; s < N; s++) {
+    const con = []; for (let j = 0; j < P.k; j++) con.push(Math.floor(rngNext(st) * N));
+    let w = con[0]; for (const c of con) if (ev.f[c] > ev.f[w]) w = c;
+    picks.push({idx: w, con}); counts[w]++;
+  }
+  return {method: 'tournament', picks, counts, pool: picks.map(p => st.pop[p.idx])};
+}
+
+function doCrossover(st){
+  const P = st.P, pool = st.sel.pool, L = P.L, pairs = [], children = [];
+  for (let i = 0; i + 1 < pool.length; i += 2) {
+    const a = pool[i], b = pool[i + 1];
+    let cut, r = null, cross, src;
+    if (st.man.cp < st.man.cuts.length) { cut = st.man.cuts[st.man.cp++]; src = 'manual'; cross = cut > 0; }
+    else { r = rngNext(st); cross = r < P.pc; cut = cross ? 1 + Math.floor(rngNext(st) * (L - 1)) : 0; src = 'rng'; }
+    if (cross) cut = Math.max(1, Math.min(L - 1, cut));
+    const ca = cross ? a.slice(0, cut) + b.slice(cut) : a;
+    const cb = cross ? b.slice(0, cut) + a.slice(cut) : b;
+    pairs.push({i, a, b, fromA: st.sel.picks[i].idx, fromB: st.sel.picks[i + 1].idx, r, cross, cut, src, ca, cb});
+    children.push(ca, cb);
+  }
+  let single = null;
+  if (pool.length % 2 === 1) { const i = pool.length - 1; single = {i, s: pool[i], from: st.sel.picks[i].idx}; children.push(pool[i]); }
+  return {pairs, single, children};
+}
+
+function doMutate(st){
+  const P = st.P, rows = st.cx.children.map(c => ({before: c, after: c, flips: []}));
+  let src = 'rng';
+  if (!st.man.mutUsed && st.man.muts.length) {
+    st.man.mutUsed = true; src = 'manual';
+    for (const [r, b] of st.man.muts) { const row = rows[r - 1]; if (!row || b < 1 || b > P.L || row.flips.includes(b - 1)) continue; row.flips.push(b - 1); }
+  } else if (P.pm > 0) {
+    for (const row of rows) for (let j = 0; j < P.L; j++) if (rngNext(st) < P.pm) row.flips.push(j);
+  }
+  let total = 0;
+  for (const row of rows) {
+    row.flips.sort((a, b) => a - b); total += row.flips.length;
+    const arr = row.before.split(''); for (const j of row.flips) arr[j] = arr[j] === '1' ? '0' : '1';
+    row.after = arr.join('');
+  }
+  return {rows, src, total};
+}
+
+function doReplace(st){
+  const P = st.P, pop = st.mu.rows.map(r => r.after);
+  let elite = null;
+  if (P.elitism) {
+    const evc = evaluate(pop, P); let w = 0;
+    for (let i = 1; i < pop.length; i++) if (evc.f[i] < evc.f[w]) w = i;
+    elite = {slot: w, from: st.ev.best, s: st.pop[st.ev.best], f: st.ev.max, replaced: pop[w], replacedF: evc.f[w]};
+    pop[w] = elite.s;
+  }
+  return {pop, ev: evaluate(pop, P), elite};
+}
+
+/* Advance exactly one phase. */
+function advance(st){
+  switch (st.phase) {
+    case 'replace':
+      st.gen++; st.pop = st.rep.pop; st.sel = st.cx = st.mu = st.rep = null;
+      /* falls through */
+    case 'init': {
+      st.ev = evaluate(st.pop, st.P); st.evals += st.pop.length;
+      st.hist.push({gen: st.gen, best: st.ev.max, avg: st.ev.avg});
+      if (!st.best || st.ev.max > st.best.f) st.best = {s: st.pop[st.ev.best], f: st.ev.max, gen: st.gen};
+      if (st.gen === 0) st.first.ev = st.ev;
+      st.phase = 'evaluate'; break;
+    }
+    case 'evaluate': st.sel = doSelect(st); if (st.gen === 0) st.first.sel = st.sel; st.phase = 'select'; break;
+    case 'select': st.cx = doCrossover(st); if (st.gen === 0) st.first.cx = st.cx; st.phase = 'crossover'; break;
+    case 'crossover': st.mu = doMutate(st); st.phase = 'mutate'; break;
+    case 'mutate': st.rep = doReplace(st); if (st.gen === 0) st.first.rep = st.rep; st.phase = 'replace'; break;
+  }
+}
+/* Run until generation g has been evaluated. */
+function runTo(st, g){ let guard = 0; while (!(st.phase === 'evaluate' && st.gen === g) && guard++ < 1e7) advance(st); }
+const clone = typeof structuredClone === 'function' ? o => structuredClone(o) : o => JSON.parse(JSON.stringify(o));
+
+/* =====================================================================
+   4. Goldberg textbook data (Table 1.1, ch. 1)
+   ===================================================================== */
+const BOOK = {
+  init: ['01101','11000','01000','10011'],
+  x: [13, 24, 8, 19], f: [169, 576, 64, 361], sum: 1170, avg: 293, max: 576,
+  p: [0.144, 0.492, 0.055, 0.309], exp: [0.58, 1.97, 0.22, 1.23], actual: [1, 2, 0, 1],
+  pool: ['01101','11000','11000','10011'], mate: [2, 1, 4, 3], cut: [4, 4, 2, 2],
+  next: ['01100','11001','11011','10000'], f2: [144, 625, 729, 256], sum2: 1754, avg2: 439, max2: 729,
+  spins: [0.12, 0.47, 0.59, 0.86], cuts: [4, 2],
+};
+function verifyParams(){ return {problem:'goldberg', N:4, L:5, pc:1, pm:0, selection:'roulette', k:2, elitism:false, seed:1, maxGen:50}; }
+function verifyManual(){ return {initPop: BOOK.init.slice(), spins: BOOK.spins.slice(), cuts: BOOK.cuts.slice(), muts: []}; }
+
+/* =====================================================================
+   5. Self-checks (unit-style, console + on-screen)
+   ===================================================================== */
+function selfChecks(){
+  const R = [];
+  const ok = (name, cond, detail = '') => R.push({name, pass: !!cond, detail});
+  const eqArr = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
+
+  { // RNG
+    const a = {rng: seedToState(42)}, b = {rng: seedToState(42)}, c = {rng: seedToState(43)};
+    let same = true, diff = false, range = true;
+    for (let i = 0; i < 500; i++) { const va = rngNext(a), vb = rngNext(b), vc = rngNext(c); if (va !== vb) same = false; if (va !== vc) diff = true; if (!(va >= 0 && va < 1)) range = false; }
+    ok('RNG: same seed → same sequence', same);
+    ok('RNG: different seed → different sequence', diff);
+    ok('RNG: values in [0, 1)', range);
+  }
+  // Goldberg verification, generation 0
+  const st = createState(verifyParams(), verifyManual());
+  advance(st); const ev = st.ev;
+  ok('Decode 01101, 11000, 01000, 10011 → 13, 24, 8, 19', eqArr(ev.x, BOOK.x), ev.x.join(', '));
+  ok('Fitness x² = 169, 576, 64, 361', eqArr(ev.f, BOOK.f), ev.f.join(', '));
+  ok('Sum Σf = 1170', ev.sum === BOOK.sum, String(ev.sum));
+  ok('Average = 293 (292.5 rounded)', Math.round(ev.avg) === BOOK.avg, String(ev.avg));
+  ok('Max = 576', ev.max === BOOK.max, String(ev.max));
+  ok('P(select) = 0.144, 0.492, 0.055, 0.309', eqArr(ev.p.map(v => +v.toFixed(3)), BOOK.p), ev.p.map(v => v.toFixed(3)).join(', '));
+  ok('Expected counts = 0.58, 1.97, 0.22, 1.23', eqArr(ev.exp.map(v => +v.toFixed(2)), BOOK.exp), ev.exp.map(v => v.toFixed(2)).join(', '));
+  ok('Probabilities sum to 1', Math.abs(ev.p.reduce((s, v) => s + v, 0) - 1) < 1e-12);
+  advance(st);
+  ok('Roulette with r = 0.12, 0.47, 0.59, 0.86 → counts 1, 2, 0, 1', eqArr(st.sel.counts, BOOK.actual), st.sel.counts.join(', '));
+  ok('Mating pool = 01101, 11000, 11000, 10011', eqArr(st.sel.pool, BOOK.pool), st.sel.pool.join(' '));
+  advance(st);
+  ok('Crossover at 4 and 2 → 01100, 11001, 11011, 10000', eqArr(st.cx.children, BOOK.next), st.cx.children.join(' '));
+  advance(st); advance(st);
+  const e2 = st.rep.ev;
+  ok('Generation 1 fitness = 144, 625, 729, 256', eqArr(e2.f, BOOK.f2), e2.f.join(', '));
+  ok('Generation 1 sum 1754, avg 439, max 729', e2.sum === BOOK.sum2 && Math.round(e2.avg) === BOOK.avg2 && e2.max === BOOK.max2, `${e2.sum}, ${e2.avg}, ${e2.max}`);
+  // Other problems and operators
+  ok('OneMax: f(10110111) = 6', PROBLEMS.onemax.f(PROBLEMS.onemax.decode('10110111')) === 6);
+  ok('Multi-peak decode: 000… → −1, 111… → 2', PROBLEMS.multipeak.decode('000000', 6) === -1 && PROBLEMS.multipeak.decode('111111', 6) === 2);
+  {
+    const f = [5, 3, 3, 9, 1, 0, 7];
+    const tp = tournamentProbs(f, 3);
+    ok('Tournament probabilities sum to 1 (with ties)', Math.abs(tp.reduce((s, v) => s + v, 0) - 1) < 1e-12);
+    ok('Tournament: best string has the highest P', tp[3] === Math.max(...tp));
+  }
+  {
+    const P = {problem:'onemax', N:30, L:24, pc:0.8, pm:0.02, selection:'tournament', k:3, elitism:false, seed:7, maxGen:20};
+    const a = createState(P), b = createState(P); runTo(a, 20); runTo(b, 20);
+    ok('Reproducible: same seed → identical 20-generation run', JSON.stringify(a.hist) === JSON.stringify(b.hist));
+    const c = createState({...P, seed: 8}); runTo(c, 20);
+    ok('Different seed → different run', JSON.stringify(a.hist) !== JSON.stringify(c.hist));
+  }
+  {
+    const P = {problem:'multipeak', N:20, L:12, pc:0.7, pm:0.01, selection:'roulette', k:2, elitism:false, seed:3, maxGen:5};
+    const a = createState(P); runTo(a, 3); advance(a); advance(a);
+    const snap = clone(a); advance(a); advance(a); advance(a); advance(a);
+    const after = JSON.stringify(a.hist);
+    const b = clone(snap); advance(b); advance(b); advance(b); advance(b);
+    ok('Step Back snapshot replays identically', after === JSON.stringify(b.hist) && b.rng === a.rng);
+  }
+  {
+    const P = {problem:'multipeak', N:16, L:14, pc:0.9, pm:0.05, selection:'roulette', k:2, elitism:true, seed:11, maxGen:60};
+    const a = createState(P); runTo(a, 60);
+    ok('Elitism: best fitness never decreases (60 gens)', a.hist.every((h, i) => i === 0 || h.best >= a.hist[i - 1].best - 1e-12));
+  }
+  {
+    const P = {problem:'onemax', N:6, L:10, pc:0.5, pm:1, selection:'roulette', k:2, elitism:false, seed:5, maxGen:5};
+    const a = createState(P); advance(a); advance(a); advance(a); advance(a);
+    ok('Mutation p_m = 1 flips every bit', a.mu.rows.every(r => r.flips.length === 10 && [...r.after].every((ch, j) => ch !== r.before[j])));
+    const b = createState({...P, pm: 0}); advance(b); advance(b); advance(b); advance(b);
+    ok('Mutation p_m = 0 flips nothing', b.mu.total === 0);
+  }
+  // ---- Lecture mode: reproduce every worked table in the lecture notes ----
+  for (const key of Object.keys(NOTES)) {
+    const c = lecMakeConfig(key), n = NOTES[key];
+    const sheet = {init: n.init.slice(), gens: n.gens.map(g => ({r: g.r.slice(), cx: g.cx.map(e => e.slice()), mut: g.mut.map(e => e.slice())}))};
+    const v = lecVerify(lecRun(c, sheet), c);
+    const bad = []; v.sections.forEach(s => s.rows.forEach(r => r.items.forEach((it, i) => { if (!it.ok) bad.push(`${s.title} ${r.label}[${i + 1}]: ${it.v} vs ${it.b}`); })));
+    ok(`Lecture notes ${key}: all ${v.pass + v.fail} table values match`, v.fail === 0, bad.slice(0, 3).join('; '));
+  }
+  {
+    const c = lecMakeConfig('ex1-4'), ev = lecEval(['0111','1010','0001','1000'], c);
+    ok('Lecture Ex.1 4-bit gen 1: sum F = 0.2149', f4(ev.sumF) === '0.2149', f4(ev.sumF));
+    ok('Lecture selection: r = 0.694 → #3 (first q ≥ r)', ev.rows.findIndex(r => r.q >= 0.694) === 2);
+    const bestOk = Object.entries(NOTES_BEST).every(([k, [s, x, f]]) => { const cc = lecMakeConfig(k), b = lecBest(cc); return b.s === s && b.x.map(f3t).join(', ') === x && f3t(b.f) === f; });
+    ok('Lecture: best grid point of all 10 encodings matches the notes', bestOk);
+    const c5 = lecMakeConfig('ex4-5', {xmin: -8, xmax: 7}), d = lecDecode('10000', c5);
+    ok('Lecture decode: 10000 on [−8, 7], L = 5 → D = 16, x = −0.258', d.D[0] === 16 && f3t(d.x[0]) === '-0.258');
+    ok('Lecture resolution: Δx = 15/31 = 0.484 (5-bit), 1 (4-bit)', c5.dx.toFixed(3) === '0.484' && lecMakeConfig('ex1-4').dx === 1);
+    ok('Lecture Ex.4 shift: F = f + 31', lecMakeConfig('ex4-4').C === 31 && lecMakeConfig('ex3-4').C === 0);
+    const cm = lecMakeConfig('mv1-5'), w = lecVarOf(6, cm), w2 = lecVarOf(1, cm);
+    ok('Lecture multi-variable: bit 6 → (x2, weight 16), bit 1 → (x1, weight 16)', w.v === 2 && w.w === 16 && w2.v === 1 && w2.w === 16);
+    const p4 = {cross: true, k: 4}, p5 = {cross: true, k: 5};
+    ok('Lecture cut location: k = 4 → between x1 and x2, k = 5 → inside x2 (m = 4)', lecLies(p4, lecMakeConfig('mv1-4')) === 'between x1 and x2' && lecLies(p5, lecMakeConfig('mv1-4')) === 'inside x2');
+    ok('Lecture E_m = N·L·p_m = 0.8 (L = 4) and 1.6 (L = 8)', f2(4 * 4 * 0.05) === '0.80' && f2(4 * lecMakeConfig('mv1-4').L * 0.05) === '1.60');
+  }
+  return R;
+}
+function runSelfChecks(){
+  const R = selfChecks(), pass = R.filter(r => r.pass).length;
+  console.group(`%cGA Visualizer self-checks: ${pass}/${R.length} passed`, `color:${pass === R.length ? '#0f7a36' : '#c43232'};font-weight:bold`);
+  for (const r of R) { console.assert(r.pass, r.name, r.detail); console.log(`${r.pass ? '✓' : '✗'} ${r.name}${r.detail ? '  [' + r.detail + ']' : ''}`); }
+  console.groupEnd();
+  $('#checkList').innerHTML = R.map(r => `<li class="${r.pass ? 'ok' : 'bad'}"><span class="m">${r.pass ? '✓' : '✗'}</span><span>${r.name}${r.detail && !r.pass ? `<small>got: ${r.detail}</small>` : ''}</span></li>`).join('');
+  const pill = $('#checkPill'); pill.textContent = `${pass}/${R.length} ✓`; pill.className = 'pill ' + (pass === R.length ? 'ok' : 'bad');
+  if (pass !== R.length) $('#checksCard').open = true;
+  return {pass, total: R.length};
+}
+
+/* =====================================================================
+   6. UI state & helpers
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const PAL_L = ['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300','#6250d6','#e34948'];
+const PAL_D = ['#3987e5','#d95926','#199e70','#c98500','#d55181','#0ca30c','#9085e9','#e66767'];
+const SEQ = ['#cde2fb','#9ec5f4','#6da7ec','#3987e5','#256abf','#184f95','#0d366b'];
+const SPEED_DELAY = [1800, 1300, 950, 700, 500, 330, 200, 110, 40, 0];
+const UNDO_MAX = 600;
+
+let S = null, undo = [];
+const UI = { wheelRot: 0, anim: null, busy: false, playing: false, revealed: -1, why: false };
+
+function isDark(){ const t = document.documentElement.dataset.theme; if (t) return t === 'dark'; return matchMedia('(prefers-color-scheme: dark)').matches; }
+function cssv(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function indColors(ev, N){
+  const pal = isDark() ? PAL_D : PAL_L;
+  if (N <= 8) return Array.from({length: N}, (_, i) => pal[i]);
+  return Array.from({length: N}, (_, i) => {
+    if (!ev) return SEQ[3];
+    const t = ev.max > ev.min ? (ev.f[i] - ev.min) / (ev.max - ev.min) : 1;
+    return SEQ[1 + Math.round(t * 5)];
+  });
+}
+const pct = v => (v * 100).toFixed(1) + '%';
+const sw = c => `<span class="sw" style="background:${c}"></span>`;
+function fitCanvas(cv){
+  const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+  const w = Math.max(1, Math.round(r.width * d)), h = Math.max(1, Math.round(r.height * d));
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  const ctx = cv.getContext('2d'); ctx.setTransform(d, 0, 0, d, 0, 0);
+  return {ctx, w: r.width, h: r.height};
+}
+function niceStep(span, n){
+  const raw = (span || 1) / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  return [1, 2, 2.5, 5, 10].map(v => v * mag).find(v => v >= raw - 1e-12);
+}
+function ticks(lo, hi, step){ const out = []; for (let v = Math.ceil(lo / step - 1e-9) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(10)); return out; }
+function fmtTick(v, step){ return step >= 1 ? String(Math.round(v)) : v.toFixed(step >= 0.1 ? 1 : 2); }
+function scoreOf(s){ const prob = PROBLEMS[S.P.problem]; const x = prob.decode(s, S.P.L); return {x, f: prob.f(x, S.P.L)}; }
+
+/* ---------- parameters ---------- */
+function readParams(){
+  return {
+    problem: $('#problem').value, N: +$('#popSize').value, L: +$('#chromLen').value,
+    pc: +$('#pc').value, pm: +$('#pm').value, selection: $('#selection').value, k: +$('#tk').value,
+    elitism: $('#elitism').checked, seed: parseInt($('#seed').value, 10) || 0, maxGen: Math.max(1, +$('#maxGen').value || 50),
+  };
+}
+function syncOutputs(){
+  $('#popSizeOut').textContent = $('#popSize').value;
+  $('#chromLenOut').textContent = $('#chromLen').value;
+  $('#pcOut').textContent = (+$('#pc').value).toFixed(2);
+  $('#pmOut').textContent = (+$('#pm').value).toFixed(3);
+  $('#tkOut').textContent = $('#tk').value;
+  const sp = +$('#speed').value; $('#speedOut').textContent = sp === 10 ? 'turbo' : `${sp}/10`;
+  $('#tkField').hidden = $('#selection').value !== 'tournament';
+}
+function applyProblemDefaults(){
+  const prob = PROBLEMS[$('#problem').value], cl = $('#chromLen');
+  cl.min = prob.minL; cl.max = prob.maxL; cl.value = prob.defL; cl.disabled = prob.minL === prob.maxL;
+  $('#popSize').value = prob.defN;
+  $('#problemDesc').innerHTML = prob.desc;
+}
+
+/* ---------- manual overrides ---------- */
+function parseManual(P){
+  const out = {initPop: [], spins: [], cuts: [], muts: [], errors: []};
+  const tok = s => s.split(/[\s,;]+/).filter(Boolean);
+  const ip = tok($('#mInit').value);
+  if (ip.length) {
+    const bad = ip.filter(s => !/^[01]+$/.test(s) || s.length !== P.L);
+    if (bad.length) out.errors.push(`Initial strings must be ${P.L}-bit 0/1 strings (bad: ${bad.slice(0, 3).join(', ')}).`);
+    else if (ip.length < 2 || ip.length > 200) out.errors.push('Initial population needs 2–200 strings.');
+    else out.initPop = ip;
+  }
+  for (const t of tok($('#mSpins').value)) { const v = Number(t); if (!(v >= 0 && v < 1)) { out.errors.push(`Spin value "${t}" must be in [0, 1).`); break; } out.spins.push(v); }
+  for (const t of tok($('#mCuts').value)) { const v = Number(t); if (!Number.isInteger(v) || v < 0 || v > P.L - 1) { out.errors.push(`Cut "${t}" must be an integer 0..${P.L - 1}.`); break; } out.cuts.push(v); }
+  for (const t of tok($('#mMuts').value)) { const m = /^(\d+):(\d+)$/.exec(t); if (!m || +m[2] < 1 || +m[2] > P.L) { out.errors.push(`Mutation "${t}" must look like child:bit with bit 1..${P.L}.`); break; } out.muts.push([+m[1], +m[2]]); }
+  return out;
+}
+function updateManualStatus(M){
+  const el = $('#manualStatus'), parts = [];
+  if (M.initPop.length) parts.push(`${M.initPop.length} initial strings`);
+  if (M.spins.length) parts.push(`${M.spins.length} spin values`);
+  if (M.cuts.length) parts.push(`${M.cuts.length} cut points`);
+  if (M.muts.length) parts.push(`${M.muts.length} mutation flips`);
+  el.className = 'status' + (M.errors.length ? ' err' : '');
+  el.innerHTML = M.errors.length ? M.errors.join('<br>') + '<br>Invalid entries were ignored.' :
+    parts.length ? `Using: ${parts.join(', ')}.` : 'No overrides. Everything comes from the seeded RNG.';
+  const pill = $('#manualPill'); pill.textContent = parts.length ? 'on' : 'off'; pill.className = 'pill' + (parts.length ? ' ok' : '');
+}
+
+/* =====================================================================
+   7. Run control
+   ===================================================================== */
+function reset(){
+  stopPlay(); cancelAnim();
+  const P = readParams(); const M = parseManual(P);
+  if (M.initPop.length && M.initPop.length !== P.N) { P.N = M.initPop.length; $('#popSize').value = P.N; syncOutputs(); }
+  S = createState(P, M); undo = []; UI.wheelRot = 0; UI.revealed = -1;
+  updateManualStatus(M); render();
+}
+function cancelAnim(){ if (UI.anim) UI.anim.skip = true; }
+const speedDelay = () => SPEED_DELAY[+$('#speed').value - 1];
+
+function pushUndo(){ undo.push(clone(S)); if (undo.length > UNDO_MAX) undo.shift(); }
+async function stepForward(){
+  if (UI.busy) { cancelAnim(); return; }
+  UI.busy = true; updateButtons();
+  pushUndo(); advance(S);
+  const animate = S.phase === 'select' && S.sel.method === 'roulette' && (!UI.playing || speedDelay() >= 110);
+  if (animate) { UI.revealed = 0; render(true); await animateSelection(); }
+  UI.revealed = -1; render();
+  UI.busy = false; updateButtons();
+}
+function stepBack(){
+  if (UI.busy || !undo.length) return;
+  stopPlay(); S = undo.pop(); UI.revealed = -1; render();
+}
+function stopPlay(){ UI.playing = false; updateButtons(); }
+async function play(){
+  if (UI.playing) { stopPlay(); return; }
+  UI.playing = true; updateButtons();
+  while (UI.playing) {
+    if (+$('#speed').value === 10) {               // turbo: one full generation per tick
+      do { pushUndo(); advance(S); } while (S.phase !== 'evaluate');
+      render();
+    } else await stepForward();
+    if (S.phase === 'evaluate' && S.gen >= S.P.maxGen) break;
+    await sleep(Math.max(16, speedDelay()));
+  }
+  UI.playing = false; updateButtons();
+}
+function updateButtons(){
+  $('#playBtn').innerHTML = UI.playing ? '❚❚ Pause' : '▶ Play';
+  $('#backBtn').disabled = !undo.length || UI.busy;
+}
+
+/* =====================================================================
+   8. Roulette wheel
+   ===================================================================== */
+function drawWheel(probs, rot, markers, colors){
+  const cv = $('#wheel'), {ctx, w, h} = fitCanvas(cv);
+  ctx.clearRect(0, 0, w, h);
+  const cx = w / 2, cy = h / 2 + 8, R = Math.min(w, h) / 2 - 22;
+  const surf = cssv('--surface'), text = cssv('--text'), text2 = cssv('--text-2');
+  if (!probs) {
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fillStyle = cssv('--surface-2'); ctx.fill();
+    ctx.strokeStyle = cssv('--border-strong'); ctx.setLineDash([5, 5]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = cssv('--muted'); ctx.font = '13px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('Evaluate fitness to build the wheel', cx, cy);
+    return;
+  }
+  const TAU = Math.PI * 2, N = probs.length;
+  // slice under the pointer
+  const rp = (((-rot) % TAU) + TAU) % TAU / TAU;
+  let c = 0, under = N - 1; for (let i = 0; i < N; i++) { c += probs[i]; if (rp < c) { under = i; break; } }
+  let a0 = -Math.PI / 2 + rot;
+  for (let i = 0; i < N; i++) {
+    const a1 = a0 + probs[i] * TAU;
+    if (probs[i] > 0) {
+      const off = i === under ? 6 : 0, mid = (a0 + a1) / 2;
+      const ox = Math.cos(mid) * off, oy = Math.sin(mid) * off;
+      ctx.beginPath(); ctx.moveTo(cx + ox, cy + oy); ctx.arc(cx + ox, cy + oy, R, a0, a1); ctx.closePath();
+      ctx.fillStyle = colors[i]; ctx.globalAlpha = i === under ? 1 : 0.88; ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = surf; ctx.lineWidth = N > 40 ? 0.5 : 2; ctx.stroke();
+      if (a1 - a0 > 0.28) {
+        const lr = R * 0.64, lx = cx + ox + Math.cos(mid) * lr, ly = cy + oy + Math.sin(mid) * lr;
+        const big = a1 - a0 > 0.55;
+        const l1 = `#${i + 1}`, l2 = big ? (probs[i] * 100).toFixed(1) + '%' : '';
+        ctx.font = '600 11.5px system-ui'; const tw = Math.max(ctx.measureText(l1).width, ctx.measureText(l2).width) + 10, th = big ? 30 : 17;
+        ctx.fillStyle = surf; ctx.globalAlpha = 0.92; roundRect(ctx, lx - tw / 2, ly - th / 2, tw, th, 5); ctx.fill(); ctx.globalAlpha = 1;
+        ctx.fillStyle = text; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        if (big) { ctx.fillText(l1, lx, ly - 7); ctx.fillStyle = text2; ctx.font = '11px system-ui'; ctx.fillText(l2, lx, ly + 7); }
+        else ctx.fillText(l1, lx, ly);
+      }
+    }
+    a0 = a1;
+  }
+  // spin markers (where each previous spin landed, rotating with the wheel)
+  ctx.strokeStyle = text; ctx.lineWidth = 2;
+  for (const r of markers) {
+    const a = -Math.PI / 2 + rot + r * TAU;
+    ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * (R - 9), cy + Math.sin(a) * (R - 9)); ctx.lineTo(cx + Math.cos(a) * (R + 3), cy + Math.sin(a) * (R + 3)); ctx.stroke();
+  }
+  // hub
+  ctx.beginPath(); ctx.arc(cx, cy, Math.max(10, R * 0.12), 0, TAU); ctx.fillStyle = surf; ctx.fill(); ctx.strokeStyle = cssv('--border-strong'); ctx.lineWidth = 1.5; ctx.stroke();
+  // pointer
+  ctx.beginPath(); ctx.moveTo(cx - 10, cy - R - 16); ctx.lineTo(cx + 10, cy - R - 16); ctx.lineTo(cx, cy - R + 6); ctx.closePath();
+  ctx.fillStyle = text; ctx.fill(); ctx.strokeStyle = surf; ctx.lineWidth = 2; ctx.stroke();
+}
+function roundRect(ctx, x, y, w, h, r){ ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+function spinTo(r, dur, markers, tok, colors){
+  return new Promise(res => {
+    const TAU = Math.PI * 2;
+    const start = UI.wheelRot % TAU, turns = dur > 450 ? 2 : 1;
+    let target = -r * TAU; while (target > start - turns * TAU) target -= TAU;
+    if (dur <= 0 || tok.skip) { UI.wheelRot = target; res(); return; }
+    const t0 = performance.now(); let done = false;
+    const finish = () => { if (done) return; done = true; UI.wheelRot = target; res(); };
+    const frame = () => {
+      if (done) return;
+      if (tok.skip) { finish(); return; }
+      const t = Math.min(1, (performance.now() - t0) / dur), e = 1 - Math.pow(1 - t, 3);
+      UI.wheelRot = start + (target - start) * e;
+      drawWheel(S.ev.p, UI.wheelRot, markers, colors);
+      if (t < 1) requestAnimationFrame(frame); else finish();
+    };
+    requestAnimationFrame(frame);
+    setTimeout(finish, dur + 300);   // fallback when frames are throttled (background tab)
+  });
+}
+async function animateSelection(){
+  const tok = UI.anim = {skip: false};
+  const picks = S.sel.picks, N = picks.length, colors = indColors(S.ev, N);
+  const budget = UI.playing ? speedDelay() * 2.2 : Math.min(N * 900, 4200);
+  const per = budget / N;
+  if (per < 140) {           // too many spins to animate one by one: one sweep, then reveal all
+    await spinTo(picks[N - 1].r, Math.min(1200, budget), [], tok, colors);
+    UI.revealed = N; renderSpinLog();
+  } else {
+    for (let j = 0; j < N && !tok.skip; j++) {
+      setReadout(j, true);
+      await spinTo(picks[j].r, per * 0.8, picks.slice(0, j).map(p => p.r), tok, colors);
+      UI.revealed = j + 1; renderSpinLog(); setReadout(j, false);
+      drawWheel(S.ev.p, UI.wheelRot, picks.slice(0, j + 1).map(p => p.r), colors);
+      if (!tok.skip) await sleep(per * 0.2);
+    }
+  }
+  UI.anim = null;
+}
+function setReadout(j, spinning){
+  const p = S.sel.picks[j], el = $('#readout');
+  if (spinning) el.innerHTML = `Spin <b>${j + 1}</b>/${S.sel.picks.length}: r = <b>${p.r.toFixed(3)}</b>${p.src === 'manual' ? ' <span class="tag man">manual</span>' : ''} …`;
+  else el.innerHTML = `Spin <b>${j + 1}</b>: r = <b>${p.r.toFixed(3)}</b> → lands on <b>#${p.idx + 1}</b> (owns ${pct(S.ev.p[p.idx])} of the wheel)`;
+}
+function renderSpinLog(){
+  const el = $('#spinlog');
+  if (!S.sel || S.sel.method !== 'roulette') { el.innerHTML = ''; return; }
+  const n = UI.revealed < 0 ? S.sel.picks.length : UI.revealed;
+  el.innerHTML = S.sel.picks.slice(0, n).map((p, j) =>
+    `<span class="chip${j === n - 1 ? ' now' : ''}" title="cumulative-probability lookup">${j + 1}: r=<b>${p.r.toFixed(3)}</b>${p.src === 'manual' ? '✎' : ''} → <b>#${p.idx + 1}</b></span>`).join('');
+}
+
+/* =====================================================================
+   9. Rendering
+   ===================================================================== */
+function render(animating = false){
+  renderPhasebar(); renderCaption(animating); renderTable(); renderSelection(animating); renderCurve(); renderChart(); renderVerify(); updateButtons();
+}
+function renderPhasebar(){
+  const idx = PHASES.indexOf(S.phase);
+  $('#genBadge').textContent = `Generation ${S.gen}`;
+  $('#phases').innerHTML = PHASES.map((p, i) => `<div class="phase ${i < idx ? 'done' : i === idx ? 'active' : ''}"><span class="n">${i < idx ? '✓' : i + 1}</span>${PHASE_LABEL[p]}</div>`).join('');
+  const prob = PROBLEMS[S.P.problem];
+  const ev = S.phase === 'replace' ? S.rep.ev : S.ev;
+  $('#stats').innerHTML = [
+    `Phase <b>${S.phase === 'init' ? 'ready' : PHASE_LABEL[S.phase]}</b>`,
+    ev ? `Current best <b>${prob.fmtF(ev.max)}</b>` : '',
+    ev ? `Current avg <b>${fmtAvg(S.P.problem, ev.avg)}</b>` : '',
+    S.best ? `Best ever <b>${prob.fmtF(S.best.f)}</b> (gen ${S.best.gen})` : '',
+    `Optimum <b>${prob.fmtF(prob.optimum(S.P.L))}</b>`,
+    `Evaluations <b>${S.evals}</b>`,
+  ].filter(Boolean).map(s => `<span>${s}</span>`).join('');
+}
+
+/* ---------- captions ---------- */
+function renderCaption(animating){
+  $('#caption').innerHTML = animating ? `Spinning the roulette wheel <b>${S.pop.length}</b> times. Each spin draws r ∈ [0, 1) and lands on the slice whose cumulative range contains r…` : captionText();
+  const why = $('#why'); why.hidden = !UI.why;
+  if (UI.why) why.innerHTML = whyText();
+}
+function captionText(){
+  const P = S.P, prob = PROBLEMS[P.problem], N = S.pop.length;
+  const fx = s => prob.fmtF(s), xx = s => prob.fmtX(s);
+  switch (S.phase) {
+    case 'init':
+      return `<b>Generation 0</b> starts with <b>${N}</b> ${P.L}-bit strings ${S.man.initManual ? 'from your <b>manual initial population</b>' : `generated at random from seed <b>${P.seed}</b>`}. Nothing has been scored yet. Press <b>Step</b> to evaluate fitness.`;
+    case 'evaluate': {
+      const ev = S.ev, b = ev.best;
+      let t = `Each string is decoded and scored with <b>${prob.fName}</b>. The fittest is <b>#${b + 1}</b> (<code>${S.pop[b]}</code>, ${prob.xName} = ${xx(ev.x[b])}, f = ${fx(ev.f[b])}). Total Σf = <b>${fx(ev.sum)}</b>, average <b>${fmtAvg(P.problem, ev.avg)}</b>.`;
+      if (P.selection === 'roulette') t += ` On the roulette wheel #${b + 1} will own <b>${pct(ev.p[b])}</b> of the area, so it expects <b>${ev.exp[b].toFixed(2)}</b> copies in the mating pool.`;
+      else t += ` In a size-${P.k} tournament #${b + 1} wins with probability <b>${ev.p[b].toFixed(3)}</b>, so it expects <b>${ev.exp[b].toFixed(2)}</b> copies.`;
+      return t;
+    }
+    case 'select': {
+      const sel = S.sel, ev = S.ev; let top = 0; sel.counts.forEach((c, i) => { if (c > sel.counts[top]) top = i; });
+      const zero = sel.counts.map((c, i) => c === 0 ? i : -1).filter(i => i >= 0);
+      if (sel.method === 'roulette') {
+        const p0 = sel.picks[0];
+        let t = `The wheel was spun <b>${N}</b> times. <b>Parent ${top + 1}</b> won ${sel.counts[top] === 1 ? 'a spin' : `<b>${sel.counts[top]}</b> spins`} because it owns <b>${pct(ev.p[top])}</b> of the wheel (expected ${ev.exp[top].toFixed(2)} copies). `;
+        t += `Spin 1 drew r = ${p0.r.toFixed(3)}${p0.src === 'manual' ? ' (manual)' : ''}, which falls in #${p0.idx + 1}'s slice. `;
+        if (zero.length) t += zero.length <= 3 ? `${zero.map(i => `#${i + 1} (${pct(ev.p[i])})`).join(', ')} won no spin and ${zero.length > 1 ? 'drop' : 'drops'} out of the mating pool.` : `${zero.length} strings won no spin and drop out.`;
+        else t += 'Every string won at least one spin.';
+        return t;
+      }
+      return `<b>${N}</b> tournaments were held. In each, ${P.k} strings were drawn at random and the fittest one won. <b>#${top + 1}</b> (f = ${fx(ev.f[top])}) won most often (<b>${sel.counts[top]}</b>×), because it beats almost anything it is drawn against. ${zero.length ? `${zero.length} string${zero.length > 1 ? 's' : ''} never won.` : ''}`;
+    }
+    case 'crossover': {
+      const cx = S.cx, nx = cx.pairs.filter(p => p.cross).length;
+      const lines = cx.pairs.slice(0, 3).map((p, k) => p.cross
+        ? (P.L <= 10
+          ? `Pair ${k + 1} (#${p.fromA + 1} × #${p.fromB + 1}) is cut after bit <b>${p.cut}</b>${p.src === 'manual' ? ' (manual)' : ''}: <code>${p.a.slice(0, p.cut)}|${p.a.slice(p.cut)}</code> + <code>${p.b.slice(0, p.cut)}|${p.b.slice(p.cut)}</code> → <code>${p.ca}</code>, <code>${p.cb}</code>.`
+          : `Pair ${k + 1} (#${p.fromA + 1} × #${p.fromB + 1}) is cut after bit <b>${p.cut}</b>${p.src === 'manual' ? ' (manual)' : ''} and the parents swap their last ${P.L - p.cut} bits.`)
+        : `Pair ${k + 1}: ${p.src === 'manual' ? 'manual cut 0, so' : `r = ${p.r.toFixed(3)} ≥ p<sub>c</sub> = ${P.pc.toFixed(2)}, so`} no crossover; the children are copies of the parents.`);
+      return `${lines.join(' ')} ${cx.pairs.length > 3 ? `… <b>${nx}</b> of ${cx.pairs.length} pairs crossed over in total.` : ''}${cx.single ? ' The odd string left over is copied unchanged.' : ''}`;
+    }
+    case 'mutate': {
+      const mu = S.mu, nb = mu.rows.length * P.L;
+      if (mu.src === 'manual') return `Using your <b>manual mutation list</b>: ${mu.total} bit${mu.total === 1 ? '' : 's'} flipped (red rings).`;
+      const list = [];
+      mu.rows.forEach((r, i) => r.flips.forEach(j => list.length < 4 && list.push(`child ${i + 1} bit ${j + 1} (${r.before[j]}→${r.after[j]})`)));
+      return `Each of the <b>${nb}</b> bits flips with probability p<sub>m</sub> = ${P.pm.toFixed(3)}, so about <b>${(nb * P.pm).toFixed(2)}</b> flips are expected. <b>${mu.total}</b> bit${mu.total === 1 ? '' : 's'} flipped${list.length ? ': ' + list.join(', ') + (mu.total > list.length ? ', …' : '') : ''}.${mu.total === 0 ? ' Nothing changed this time, as is usual with small p<sub>m</sub>.' : ''}`;
+    }
+    case 'replace': {
+      const a = S.ev, b = S.rep.ev, d = a.avg !== 0 ? (b.avg - a.avg) / Math.abs(a.avg) * 100 : 0;
+      let t = `The ${N} children become <b>generation ${S.gen + 1}</b>. Average fitness ${fmtAvg(P.problem, a.avg)} → <b>${fmtAvg(P.problem, b.avg)}</b> (${d >= 0 ? '+' : ''}${d.toFixed(1)}%), best ${fx(a.max)} → <b>${fx(b.max)}</b>.`;
+      const e = S.rep.elite;
+      if (e) t += ` <b>Elitism:</b> the best parent <code>${e.s}</code> (f = ${fx(e.f)}) replaced the weakest child in slot ${e.slot + 1} (f = ${fx(e.replacedF)}).`;
+      if (b.max >= prob.optimum(P.L) - 1e-12) t += ' 🎯 The optimum is in the population.';
+      return t;
+    }
+  }
+  return '';
+}
+function whyText(){
+  const P = S.P, sel = P.selection;
+  const T = {
+    init: ['What is going on?', [
+      'A <b>genetic algorithm</b> (GA) searches the way natural selection works. Instead of improving one guess, it keeps a <b>population</b> of candidate answers. Each one is written as a string of bits called a <b>chromosome</b>.',
+      `In Goldberg's problem a 5-bit string is a binary number: <span class="formula">01101 = 0·16 + 1·8 + 1·4 + 0·2 + 1·1 = 13</span>. The first generation is random because the GA knows nothing yet.`,
+      'The <b>seed</b> makes the "random" numbers repeatable. Two people with the same seed and settings see exactly the same run, which makes it easy to check against a hand calculation.']],
+    evaluate: ['Why evaluate fitness?', [
+      'Fitness is the score the GA tries to <b>maximise</b>. We decode each string into its value x and put it into the objective function.',
+      sel === 'roulette'
+        ? 'The selection probability <span class="formula">p<sub>i</sub> = f<sub>i</sub> / Σf</span> is each string\'s share of the total fitness. That share is the size of its slice on the roulette wheel.'
+        : `For a size-${P.k} tournament the chance of being picked depends only on <b>rank</b>: <span class="formula">P = ((N−r+1)<sup>k</sup> − (N−r)<sup>k</sup>) / N<sup>k</sup></span> for rank r (1 = best). Ties share their probability.`,
+      'The <b>expected count</b> <span class="formula">N·p<sub>i</sub></span> (for the roulette wheel this equals <span class="formula">f<sub>i</sub> / f̄</span>) is how many copies a string "deserves" in the mating pool. Above 1 means above average, so the string should be copied more than once. Below 1 means it may disappear.']],
+    select: ['Why select?', [
+      'Selection is the "survival of the fittest" step. It is <b>probabilistic</b>: fitter strings are more likely to be picked, but nothing is guaranteed.',
+      sel === 'roulette'
+        ? 'Roulette wheel: each string owns a slice proportional to its fitness. Each spin draws a random r ∈ [0, 1). We walk through the cumulative probabilities (e.g. 0.144, 0.636, 0.691, 1.000) until we pass r. That slice wins. The tick marks on the rim show where every spin landed.'
+        : `Tournament: draw ${P.k} strings at random and keep the best one. A bigger k means stronger selection pressure. It only compares fitness values, so it also works with negative or badly scaled fitness.`,
+      'Because the draw is random, the <b>actual</b> counts differ from the <b>expected</b> counts. That is sampling noise. With 4 strings it is large; with 100 strings it averages out.']],
+    crossover: ['Why crossover?', [
+      'Crossover <b>recombines</b> parts of good solutions. Strings in the mating pool are paired in order (1 with 2, 3 with 4, …).',
+      `For each pair, with probability p<sub>c</sub> = ${P.pc.toFixed(2)} we pick a cut point uniformly between 1 and L−1, and the two strings <b>swap tails</b>: <span class="formula">0110|1 × 1100|0 → 01100 + 11001</span>. The blue/orange underline shows which parent each bit came from. With no crossover, the parents are copied as they are.`,
+      'Crossover can only mix bits that already exist. If every string has a 0 in some position, crossover can never produce a 1 there. Mutation fixes that.']],
+    mutate: ['Why mutate?', [
+      `Mutation flips each bit on its own with a small probability p<sub>m</sub> = ${P.pm.toFixed(3)}. It brings back diversity and can recover bit values that the whole population has lost.`,
+      'If p<sub>m</sub> is too high, the GA turns into random search. If it is too low, the population can converge too early on a mediocre answer.',
+      'In Goldberg\'s example p<sub>m</sub> = 0.001 and there are 20 bits, so only 0.02 flips are expected per generation. That is why no bit changes in his table.']],
+    replace: ['Why replace the whole generation?', [
+      'This is <b>generational replacement</b>: the children replace all of the parents. The average fitness usually goes up because above-average building blocks get more copies.',
+      'This is the idea behind Holland\'s <b>schema theorem</b>. Short, low-order, above-average patterns such as <span class="formula">1****</span> ("first bit is 1") receive exponentially more trials over the generations.',
+      `<b>Elitism</b> (currently ${P.elitism ? 'on' : 'off'}) copies the best parent unchanged over the worst child. Then the best fitness so far can never go down. Without it, an unlucky spin can lose the best string.`]],
+  };
+  const [h, ps] = T[S.phase];
+  return `<h3>${h}</h3>${ps.map(p => `<p>${p}</p>`).join('')}`;
+}
+
+/* ---------- tables ---------- */
+function bits(s, o = {}){
+  const dense = s.length > 24, compact = !dense && s.length > 10;
+  let h = `<span class="bits${dense ? ' dense' : compact ? ' compact' : ''}" title="${s}">`;
+  for (let j = 0; j < s.length; j++) {
+    if (o.cut && j === o.cut) h += '<span class="cut"></span>';
+    let cls = 'b' + s[j];
+    if (o.origin) cls += (o.cut && j >= o.cut) ? (o.origin === 'A' ? ' ob' : ' oa') : (o.origin === 'A' ? ' oa' : ' ob');
+    if (o.flips && o.flips.includes(j)) cls += ' flip';
+    if (o.anim && o.cut && j >= o.cut) cls += ' tail';
+    h += `<i class="${cls}">${dense ? '' : s[j]}</i>`;
+  }
+  return h + '</span>';
+}
+function popTable(pop, ev, cols, opt = {}){
+  const P = S.P, prob = PROBLEMS[P.problem], N = pop.length;
+  const pHead = P.selection === 'roulette' ? 'P(select) = f/Σf' : `P(win, k=${P.k})`;
+  let h = `<div class="table-wrap"><table><thead><tr><th class="l">#</th><th class="l">String</th><th>${prob.xName}</th><th>f</th><th>${pHead}</th><th>Expected N·P</th>${opt.counts ? '<th>Actual count</th>' : ''}</tr></thead><tbody>`;
+  for (let i = 0; i < N; i++) {
+    const isBest = ev && i === ev.best, zero = opt.counts && opt.counts[i] === 0;
+    const el = opt.elite && opt.elite.slot === i ? '<span class="tag elite">elite</span>' : '';
+    h += `<tr class="${isBest ? 'best' : ''}${zero ? ' zero' : ''}"><td class="l">${sw(cols[i])}${i + 1}</td><td class="l">${bits(pop[i])}${el}</td>`;
+    if (ev) h += `<td>${prob.fmtX(ev.x[i])}</td><td>${prob.fmtF(ev.f[i])}</td><td>${ev.p[i].toFixed(3)}</td><td>${ev.exp[i].toFixed(2)}</td>`;
+    else h += '<td>—</td><td>—</td><td>—</td><td>—</td>';
+    if (opt.counts) h += `<td class="hl">${opt.counts[i]}</td>`;
+    h += '</tr>';
+  }
+  h += '</tbody>';
+  if (ev) {
+    const maxP = Math.max(...ev.p), maxE = Math.max(...ev.exp);
+    const cnt = opt.counts;
+    h += `<tfoot>
+      <tr><td class="lab" colspan="3">Sum</td><td>${prob.fmtF(ev.sum)}</td><td>${ev.p.reduce((a, b) => a + b, 0).toFixed(3)}</td><td>${ev.exp.reduce((a, b) => a + b, 0).toFixed(2)}</td>${cnt ? `<td>${cnt.reduce((a, b) => a + b, 0)}</td>` : ''}</tr>
+      <tr><td class="lab" colspan="3">Average</td><td>${fmtAvg(P.problem, ev.avg)}</td><td>${(1 / N).toFixed(3)}</td><td>1.00</td>${cnt ? '<td>1</td>' : ''}</tr>
+      <tr><td class="lab" colspan="3">Max</td><td>${prob.fmtF(ev.max)}</td><td>${maxP.toFixed(3)}</td><td>${maxE.toFixed(2)}</td>${cnt ? `<td>${Math.max(...cnt)}</td>` : ''}</tr></tfoot>`;
+  }
+  return h + '</table></div>';
+}
+function renderTable(){
+  const P = S.P, prob = PROBLEMS[P.problem], host = $('#tableHost'), legend = $('#tableLegend');
+  let title = '', h = '', leg = '';
+  const cols = indColors(S.ev, S.pop.length);
+  switch (S.phase) {
+    case 'init': title = 'Initial population (generation 0)'; h = popTable(S.pop, null, cols); break;
+    case 'evaluate': title = `Fitness evaluation (generation ${S.gen})`; h = popTable(S.pop, S.ev, cols); break;
+    case 'select': {
+      title = `Selection (generation ${S.gen})`;
+      h = popTable(S.pop, S.ev, cols, {counts: S.sel.counts});
+      h += `<div class="subtable-title">Mating pool</div><div class="table-wrap"><table><thead><tr><th class="l">Slot</th><th class="l">Picked</th><th class="l">String</th><th class="l">How</th></tr></thead><tbody>`;
+      S.sel.picks.forEach((p, j) => {
+        const how = S.sel.method === 'roulette'
+          ? `r = ${p.r.toFixed(3)}${p.src === 'manual' ? '<span class="tag man">manual</span>' : ''}`
+          : p.con.map(c => `<span class="${c === p.idx ? '' : 'lost'}">#${c + 1}</span>`).join(' vs ') + ` → #${p.idx + 1}`;
+        h += `<tr><td class="l">${j + 1}</td><td class="l">${sw(cols[p.idx])}#${p.idx + 1}</td><td class="l">${bits(S.sel.pool[j])}</td><td class="l">${how}</td></tr>`;
+      });
+      h += '</tbody></table></div>';
+      break;
+    }
+    case 'crossover': {
+      title = `Crossover (generation ${S.gen})`;
+      leg = '<span><i class="ul" style="border-bottom-color:var(--oa)"></i>from parent A</span><span><i class="ul" style="border-bottom-color:var(--ob)"></i>from parent B</span><span><i class="ln" style="border-color:var(--text);width:2px;height:14px;border-top:0;border-left:2px solid"></i>cut</span>';
+      h = `<div class="table-wrap"><table><thead><tr><th class="l">Pair</th><th class="l">Parent</th><th class="l">Parent string</th><th class="l"></th><th class="l">Child string</th><th>${prob.xName}</th><th>f</th></tr></thead><tbody>`;
+      S.cx.pairs.forEach((p, k) => {
+        const info = p.cross ? `<b>cut after bit ${p.cut}</b>${p.src === 'manual' ? '<span class="tag man">manual</span>' : `<br><small>r = ${p.r.toFixed(3)} &lt; p<sub>c</sub></small>`}`
+                             : `<b>no crossover</b><br><small>${p.src === 'manual' ? 'manual cut = 0' : `r = ${p.r.toFixed(3)} ≥ p<sub>c</sub>`}</small>`;
+        const sa = scoreOf(p.ca), sb = scoreOf(p.cb);
+        h += `<tr><td class="pairinfo" rowspan="2">Pair ${k + 1}<br>${info}</td><td class="l">A: ${sw(cols[p.fromA])}#${p.fromA + 1}</td><td class="l">${bits(p.a, {cut: p.cross ? p.cut : 0, origin: p.cross ? 'A' : null})}</td><td class="l">→</td><td class="l">${bits(p.ca, {cut: p.cross ? p.cut : 0, origin: p.cross ? 'A' : null, anim: true})}</td><td>${prob.fmtX(sa.x)}</td><td>${prob.fmtF(sa.f)}</td></tr>`;
+        h += `<tr class="pair-end"><td class="l">B: ${sw(cols[p.fromB])}#${p.fromB + 1}</td><td class="l">${bits(p.b, {cut: p.cross ? p.cut : 0, origin: p.cross ? 'B' : null})}</td><td class="l">→</td><td class="l">${bits(p.cb, {cut: p.cross ? p.cut : 0, origin: p.cross ? 'B' : null, anim: true})}</td><td>${prob.fmtX(sb.x)}</td><td>${prob.fmtF(sb.f)}</td></tr>`;
+      });
+      if (S.cx.single) { const s1 = S.cx.single, sc = scoreOf(s1.s); h += `<tr><td class="pairinfo">Leftover<br><small>odd population, copied</small></td><td class="l">${sw(cols[s1.from])}#${s1.from + 1}</td><td class="l">${bits(s1.s)}</td><td class="l">→</td><td class="l">${bits(s1.s)}</td><td>${prob.fmtX(sc.x)}</td><td>${prob.fmtF(sc.f)}</td></tr>`; }
+      h += '</tbody></table></div>';
+      break;
+    }
+    case 'mutate': {
+      title = `Mutation (generation ${S.gen})`;
+      leg = '<span><i class="ring"></i>flipped bit</span>';
+      h = `<div class="table-wrap"><table><thead><tr><th class="l">Child</th><th class="l">Before</th><th class="l">After</th><th class="l">Flipped bits</th><th>${prob.xName}</th><th>f</th></tr></thead><tbody>`;
+      S.mu.rows.forEach((r, i) => {
+        const sc = scoreOf(r.after);
+        h += `<tr><td class="l">${i + 1}</td><td class="l">${bits(r.before)}</td><td class="l">${bits(r.after, {flips: r.flips})}</td><td class="l">${r.flips.length ? r.flips.map(j => j + 1).join(', ') : '—'}</td><td>${prob.fmtX(sc.x)}</td><td>${prob.fmtF(sc.f)}</td></tr>`;
+      });
+      h += `</tbody><tfoot><tr><td class="lab" colspan="3">Total flips (${S.mu.src === 'manual' ? 'manual' : `p<sub>m</sub> = ${P.pm.toFixed(3)}`})</td><td class="l">${S.mu.total}</td><td colspan="2"></td></tr></tfoot></table></div>`;
+      break;
+    }
+    case 'replace': {
+      title = `New population (generation ${S.gen + 1})`;
+      h = popTable(S.rep.pop, S.rep.ev, indColors(S.rep.ev, S.rep.pop.length), {elite: S.rep.elite});
+      const a = S.ev, b = S.rep.ev;
+      h += `<div class="sumline"><span>Sum <b>${prob.fmtF(a.sum)}</b> → <b>${prob.fmtF(b.sum)}</b></span><span>Average <b>${fmtAvg(P.problem, a.avg)}</b> → <b>${fmtAvg(P.problem, b.avg)}</b></span><span>Max <b>${prob.fmtF(a.max)}</b> → <b>${prob.fmtF(b.max)}</b></span></div>`;
+      break;
+    }
+  }
+  $('#tableTitle').textContent = title; legend.innerHTML = leg; host.innerHTML = h;
+}
+
+/* ---------- selection panel ---------- */
+function renderSelection(animating){
+  const P = S.P, isR = P.selection === 'roulette';
+  $('#wheelBox').hidden = !isR; $('#tournBox').hidden = isR;
+  $('#selTitle').textContent = isR ? 'Roulette wheel' : `Tournament selection (k = ${P.k})`;
+  const N = S.pop.length;
+  if (isR) {
+    $('#selSub').textContent = N > 8 ? 'slice colour = fitness (darker = fitter)' : 'slice area ∝ fitness';
+    const probs = S.ev ? S.ev.p : null, cols = indColors(S.ev, N);
+    const spun = S.sel && S.sel.method === 'roulette';
+    if (animating) { drawWheel(probs, UI.wheelRot, [], cols); $('#readout').innerHTML = ''; $('#spinlog').innerHTML = ''; return; }
+    if (spun) { UI.wheelRot = -S.sel.picks[S.sel.picks.length - 1].r * Math.PI * 2; }
+    else UI.wheelRot = 0;
+    drawWheel(probs, UI.wheelRot, spun ? S.sel.picks.map(p => p.r) : [], cols);
+    if (spun) { const j = S.sel.picks.length - 1; setReadout(j, false); }
+    else $('#readout').innerHTML = S.ev ? 'Step to spin the wheel.' : '';
+    renderSpinLog();
+    return;
+  }
+  // tournament view
+  $('#selSub').textContent = '';
+  const box = $('#tournBox'), ev = S.ev, prob = PROBLEMS[P.problem];
+  if (!ev) { box.innerHTML = '<p class="note">Evaluate fitness first.</p>'; return; }
+  if (!S.sel) {
+    const order = ev.p.map((_, i) => i).sort((a, b) => ev.p[b] - ev.p[a]).slice(0, 14), mx = Math.max(...ev.p);
+    box.innerHTML = `<p class="note" style="margin-top:0">Chance each string wins one tournament (top ${order.length}):</p><div class="tourn">` +
+      order.map(i => `<div class="pbar"><span>#${i + 1}</span><span class="bar" style="width:${(ev.p[i] / mx * 100).toFixed(1)}%"></span><span>${ev.p[i].toFixed(3)}</span></div>`).join('') + '</div>';
+    return;
+  }
+  const lim = 60;
+  box.innerHTML = '<div class="tourn">' + S.sel.picks.slice(0, lim).map((p, j) =>
+    `<div class="t"><b>T${j + 1}</b> ${p.con.map(c => `<span class="c ${c === p.idx ? 'w' : 'lost'}">#${c + 1} (${prob.fmtF(ev.f[c])})</span>`).join('<span class="vs">vs</span>')} <span class="vs">→</span> <span class="w">#${p.idx + 1}</span></div>`).join('') +
+    (S.sel.picks.length > lim ? `<p class="note">… ${S.sel.picks.length - lim} more</p>` : '') + '</div>';
+}
+
+/* ---------- function curve / histogram ---------- */
+let curveDots = [];
+function renderCurve(){
+  const P = S.P, prob = PROBLEMS[P.problem], cv = $('#curve'), {ctx, w, h} = fitCanvas(cv);
+  ctx.clearRect(0, 0, w, h); curveDots = [];
+  const grid = cssv('--grid'), muted = cssv('--muted'), text2 = cssv('--text-2'), surf = cssv('--surface'), s1 = cssv('--s1');
+  const m = {l: 44, r: 14, t: 12, b: 30}, pw = w - m.l - m.r, ph = h - m.t - m.b;
+  let cur = S.pop, ghost = null, colored = true, curLabel = 'current population';
+  if (S.phase === 'crossover') { cur = S.cx.children; ghost = S.pop; colored = false; curLabel = 'children'; }
+  else if (S.phase === 'mutate') { cur = S.mu.rows.map(r => r.after); ghost = S.pop; colored = false; curLabel = 'mutated children'; }
+  else if (S.phase === 'replace') { cur = S.rep.pop; ghost = S.pop; colored = false; curLabel = `generation ${S.gen + 1}`; }
+  const cols = colored ? indColors(S.ev, cur.length) : null;
+  ctx.font = '11px system-ui'; ctx.lineWidth = 1;
+
+  if (prob.kind === 'hist') {
+    $('#curveTitle').textContent = 'Population histogram: number of 1s';
+    $('#curveLegend').innerHTML = `<span><i class="dot" style="background:${s1};border-radius:2px"></i>${curLabel}</span>${ghost ? `<span><i class="dot" style="border:1.5px solid ${muted};border-radius:2px"></i>previous</span>` : ''}`;
+    const L = P.L, cnt = new Array(L + 1).fill(0), gcnt = new Array(L + 1).fill(0);
+    cur.forEach(s => cnt[prob.decode(s)]++); if (ghost) ghost.forEach(s => gcnt[prob.decode(s)]++);
+    const ymax = Math.max(1, ...cnt, ...gcnt), st = niceStep(ymax, 4), top = Math.ceil(ymax / st) * st;
+    const X = v => m.l + (v + 0.5) / (L + 1) * pw, Y = v => m.t + ph - v / top * ph, bw = Math.max(2, pw / (L + 1) - 2);
+    ticks(0, top, st).forEach(t => { ctx.strokeStyle = grid; ctx.beginPath(); ctx.moveTo(m.l, Y(t)); ctx.lineTo(w - m.r, Y(t)); ctx.stroke(); ctx.fillStyle = muted; ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillText(fmtTick(t, st), m.l - 6, Y(t)); });
+    for (let v = 0; v <= L; v++) {
+      if (cnt[v]) { ctx.fillStyle = s1; roundTop(ctx, X(v) - bw / 2, Y(cnt[v]), bw, Y(0) - Y(cnt[v]), Math.min(4, bw / 2)); ctx.fill(); }
+      if (ghost && gcnt[v]) { ctx.strokeStyle = muted; ctx.lineWidth = 1.5; ctx.strokeRect(X(v) - bw / 2, Y(gcnt[v]), bw, Y(0) - Y(gcnt[v])); ctx.lineWidth = 1; }
+      curveDots.push({x: X(v), y: Y(Math.max(cnt[v], 0.5)), bar: true, v, n: cnt[v], hw: Math.max(bw / 2, 6)});
+    }
+    const xs = niceStep(L, Math.min(L, 8));
+    ctx.fillStyle = muted; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ticks(0, L, Math.max(1, Math.round(xs))).forEach(t => ctx.fillText(String(t), X(t), h - m.b + 6));
+    ctx.fillText('number of 1s (fitness)', m.l + pw / 2, h - 13);
+    return;
+  }
+  $('#curveTitle').textContent = `Population on ${prob.fName}`;
+  $('#curveLegend').innerHTML = `<span><i class="dot" style="background:${colored && cur.length <= 8 ? 'conic-gradient(' + PAL_L.slice(0, 4).join(',') + ')' : s1}"></i>${curLabel}</span>${ghost ? `<span><i class="dot" style="border:1.5px solid ${muted}"></i>previous</span>` : ''}`;
+  const [lo, hi] = prob.domain(), opt = prob.optimum(P.L);
+  const yst = niceStep(opt, 4), top = Math.ceil(opt * 1.04 / yst) * yst;
+  const X = x => m.l + (x - lo) / (hi - lo) * pw, Y = y => m.t + ph - y / top * ph;
+  ticks(0, top, yst).forEach(t => { ctx.strokeStyle = grid; ctx.beginPath(); ctx.moveTo(m.l, Y(t)); ctx.lineTo(w - m.r, Y(t)); ctx.stroke(); ctx.fillStyle = muted; ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillText(fmtTick(t, yst), m.l - 6, Y(t)); });
+  const xst = niceStep(hi - lo, 6); ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ticks(lo, hi, xst).forEach(t => ctx.fillText(fmtTick(t, xst), X(t), h - m.b + 6));
+  ctx.fillText('x', m.l + pw / 2, h - 13);
+  // curve
+  ctx.beginPath(); const n = 600;
+  for (let i = 0; i <= n; i++) { const x = lo + (hi - lo) * i / n, y = prob.f(x, P.L); i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)); }
+  ctx.strokeStyle = text2; ctx.lineWidth = 1.5; ctx.stroke(); ctx.lineWidth = 1;
+  // ghost
+  if (ghost) { ctx.strokeStyle = muted; ctx.lineWidth = 1.5; for (const s of ghost) { const x = prob.decode(s, P.L); ctx.beginPath(); ctx.arc(X(x), Y(prob.f(x, P.L)), 4, 0, Math.PI * 2); ctx.stroke(); } ctx.lineWidth = 1; }
+  // current, grouped by string value
+  const groups = new Map();
+  cur.forEach((s, i) => { const g = groups.get(s) || {s, idx: []}; g.idx.push(i); groups.set(s, g); });
+  for (const g of groups.values()) {
+    const x = prob.decode(g.s, P.L), y = prob.f(x, P.L), px = X(x), py = Y(y);
+    ctx.beginPath(); ctx.arc(px, py, 5.5, 0, Math.PI * 2);
+    ctx.fillStyle = colored ? cols[g.idx[0]] : s1; ctx.fill(); ctx.strokeStyle = surf; ctx.lineWidth = 2; ctx.stroke(); ctx.lineWidth = 1;
+    if (g.idx.length > 1) { ctx.fillStyle = text2; ctx.font = '600 10.5px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText('×' + g.idx.length, px, py - 8); ctx.font = '11px system-ui'; }
+    curveDots.push({x: px, y: py, s: g.s, xv: x, f: y, idx: g.idx});
+  }
+}
+function roundTop(ctx, x, y, w, h, r){ ctx.beginPath(); ctx.moveTo(x, y + h); ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r); ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r); ctx.lineTo(x + w, y + h); ctx.closePath(); }
+function curveHover(e){
+  const cv = $('#curve'), tip = $('#curveTip'), rect = cv.getBoundingClientRect(), mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  let best = null, bd = 14;
+  for (const d of curveDots) { const dist = d.bar ? (Math.abs(mx - d.x) <= d.hw ? 0 : 99) : Math.hypot(mx - d.x, my - d.y); if (dist < bd) { bd = dist; best = d; } }
+  if (!best || (best.bar && !best.n)) { tip.hidden = true; return; }
+  const prob = PROBLEMS[S.P.problem];
+  tip.innerHTML = best.bar ? `<b>${best.n}</b> string${best.n > 1 ? 's' : ''} with <b>${best.v}</b> ones` :
+    `<code>${best.s}</code><br>x = <b>${prob.fmtX(best.xv)}</b> · f = <b>${prob.fmtF(best.f)}</b>${best.idx.length > 1 ? `<br>${best.idx.length} copies` : ''}`;
+  tip.hidden = false; placeTip(tip, best.x, best.bar ? my : best.y, rect.width);
+}
+function placeTip(tip, x, y, W){ const tw = tip.offsetWidth; tip.style.left = (x + 14 + tw > W ? x - 14 - tw : x + 14) + 'px'; tip.style.top = Math.max(0, y - 20) + 'px'; }
+
+/* ---------- line chart (shared by Explore & Compare) ---------- */
+function lineChart(cv, tip, cfg){
+  const {ctx, w, h} = fitCanvas(cv); ctx.clearRect(0, 0, w, h);
+  const grid = cssv('--grid'), muted = cssv('--muted'), text = cssv('--text'), text2 = cssv('--text-2'), surf = cssv('--surface');
+  const m = {l: 50, r: cfg.endLabels ? 62 : 18, t: 14, b: 36}, pw = w - m.l - m.r, ph = h - m.t - m.b;
+  const xMax = Math.max(1, cfg.xMax);
+  const yTop0 = Math.max(cfg.ref ? cfg.ref.y : -Infinity, ...cfg.series.flatMap(s => s.data.map(d => d[1])), 1e-9);
+  const yst = niceStep(yTop0 - cfg.yMin, 5), yTop = Math.ceil((yTop0 * 1.02) / yst) * yst;
+  const X = x => m.l + x / xMax * pw, Y = y => m.t + ph - (y - cfg.yMin) / (yTop - cfg.yMin) * ph;
+  ctx.font = '11px system-ui'; ctx.lineWidth = 1;
+  ticks(cfg.yMin, yTop, yst).forEach(t => { ctx.strokeStyle = grid; ctx.beginPath(); ctx.moveTo(m.l, Y(t)); ctx.lineTo(m.l + pw, Y(t)); ctx.stroke(); ctx.fillStyle = muted; ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillText(fmtTick(t, yst), m.l - 6, Y(t)); });
+  const xst = Math.max(1, Math.round(niceStep(xMax, 8)));
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = muted;
+  ticks(0, xMax, xst).forEach(t => ctx.fillText(String(t), X(t), m.t + ph + 6));
+  ctx.fillText('generation', m.l + pw / 2, h - 14);
+  ctx.save(); ctx.translate(12, m.t + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('fitness', 0, 0); ctx.restore();
+  if (cfg.ref) {
+    ctx.strokeStyle = muted; ctx.setLineDash([2, 4]); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(m.l, Y(cfg.ref.y)); ctx.lineTo(m.l + pw, Y(cfg.ref.y)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = muted; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.fillText(cfg.ref.label, m.l + 4, Y(cfg.ref.y) - 2);
+  }
+  for (const s of cfg.series) {
+    if (!s.data.length) continue;
+    ctx.strokeStyle = s.color; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.setLineDash(s.dash ? [6, 4] : []);
+    ctx.beginPath(); s.data.forEach((d, i) => i ? ctx.lineTo(X(d[0]), Y(d[1])) : ctx.moveTo(X(d[0]), Y(d[1]))); ctx.stroke(); ctx.setLineDash([]);
+    const last = s.data[s.data.length - 1];
+    ctx.beginPath(); ctx.arc(X(last[0]), Y(last[1]), 4, 0, Math.PI * 2); ctx.fillStyle = s.color; ctx.fill(); ctx.strokeStyle = surf; ctx.lineWidth = 2; ctx.stroke();
+  }
+  // direct end labels with collision nudging
+  if (cfg.endLabels) {
+    const labs = cfg.series.filter(s => s.data.length).map(s => ({s, y: Y(s.data[s.data.length - 1][1])})).sort((a, b) => a.y - b.y);
+    for (let i = 1; i < labs.length; i++) if (labs[i].y - labs[i - 1].y < 14) labs[i].y = labs[i - 1].y + 14;
+    ctx.font = '600 11.5px system-ui'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = text;
+    for (const l of labs) ctx.fillText(l.s.name, m.l + pw + 9, l.y);
+  }
+  // hover
+  const hv = cv._hover;
+  if (hv != null && hv >= 0 && hv <= xMax) {
+    ctx.strokeStyle = text2; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X(hv), m.t); ctx.lineTo(X(hv), m.t + ph); ctx.stroke();
+    const rows = [];
+    for (const s of cfg.series) { const d = s.data.find(d => d[0] === hv); if (!d) continue; rows.push(`<div class="r"><i class="ln${s.dash ? ' dash' : ''}" style="border-color:${s.color};width:14px;border-top-width:2px;border-top-style:${s.dash ? 'dashed' : 'solid'}"></i>${s.name}: <b>${cfg.fmt(d[1])}</b></div>`);
+      ctx.beginPath(); ctx.arc(X(d[0]), Y(d[1]), 4.5, 0, Math.PI * 2); ctx.fillStyle = s.color; ctx.fill(); ctx.strokeStyle = surf; ctx.lineWidth = 2; ctx.stroke(); }
+    if (rows.length) { tip.innerHTML = `<div style="color:${muted}">Generation ${hv}</div>${rows.join('')}`; tip.hidden = false; placeTip(tip, X(hv), m.t + 10, w); }
+    else tip.hidden = true;
+  } else tip.hidden = true;
+  cv._geom = {m, pw, xMax};
+}
+function attachChartHover(cv, redraw){
+  cv.addEventListener('pointermove', e => { const g = cv._geom; if (!g) return; const r = cv.getBoundingClientRect(); cv._hover = Math.max(0, Math.min(g.xMax, Math.round((e.clientX - r.left - g.m.l) / g.pw * g.xMax))); redraw(); });
+  cv.addEventListener('pointerleave', () => { cv._hover = null; redraw(); });
+}
+function renderChart(){
+  const P = S.P, prob = PROBLEMS[P.problem], s1 = cssv('--s1'), s2 = cssv('--s2');
+  const last = S.hist.length ? S.hist[S.hist.length - 1].gen : 0;
+  $('#chartLegend').innerHTML = `<span><i class="ln" style="border-color:${s1}"></i>Best in generation</span><span><i class="ln" style="border-color:${s2}"></i>Average</span><span><i class="ln dash" style="border-color:${cssv('--muted')};border-top-style:dotted"></i>Optimum</span>`;
+  lineChart($('#chart'), $('#chartTip'), {
+    series: [{name: 'Best', color: s1, data: S.hist.map(h => [h.gen, h.best])}, {name: 'Avg', color: s2, data: S.hist.map(h => [h.gen, h.avg])}],
+    xMax: Math.max(10, last), yMin: 0, ref: {y: prob.optimum(P.L), label: `optimum ${prob.fmtF(prob.optimum(P.L))}`}, endLabels: true,
+    fmt: v => P.problem === 'multipeak' ? v.toFixed(3) : String(+v.toFixed(2)),
+  });
+}
+
+/* ---------- verification card ---------- */
+function renderVerify(){
+  const card = $('#verifyCard');
+  const on = S.P.problem === 'goldberg' && S.init0 && S.init0.join() === BOOK.init.join();
+  card.hidden = !on; if (!on) return;
+  const F = S.first; let pass = 0, fail = 0, pend = 0;
+  const cell = (comp, book, fmt = String) => {
+    if (comp == null) { pend++; return `<td class="vc pend"><b>—</b><small>book ${fmt(book)}</small></td>`; }
+    const ok = fmt(comp) === fmt(book); ok ? pass++ : fail++;
+    return `<td class="vc ${ok ? 'ok' : 'bad'}"><b>${fmt(comp)}</b><small>book ${fmt(book)}</small><span class="mark">${ok ? '✓' : '✗'}</span></td>`;
+  };
+  const f3 = v => v.toFixed(3), f2 = v => v.toFixed(2), rnd = v => String(Math.round(v));
+  const ev = F.ev, sel = F.sel, cx = F.cx, rep = F.rep;
+  let h = '<thead><tr><th class="l">#</th><th class="l">String</th><th>x</th><th>f(x) = x²</th><th>P = f/Σf</th><th>Expected</th><th>Actual</th></tr></thead><tbody>';
+  for (let i = 0; i < 4; i++) h += `<tr><td class="l">${i + 1}</td>${cell(S.init0[i], BOOK.init[i])}${cell(ev && ev.x[i], BOOK.x[i])}${cell(ev && ev.f[i], BOOK.f[i])}${cell(ev && ev.p[i], BOOK.p[i], f3)}${cell(ev && ev.exp[i], BOOK.exp[i], f2)}${cell(sel && sel.counts[i], BOOK.actual[i])}</tr>`;
+  h += `</tbody><tfoot><tr><td class="lab" colspan="3">Sum</td>${cell(ev && ev.sum, BOOK.sum)}<td colspan="3"></td></tr><tr><td class="lab" colspan="3">Average</td>${cell(ev && ev.avg, BOOK.avg, rnd)}<td colspan="3"></td></tr><tr><td class="lab" colspan="3">Max</td>${cell(ev && ev.max, BOOK.max)}<td colspan="3"></td></tr></tfoot>`;
+  $('#vt1').innerHTML = h;
+  h = '<thead><tr><th class="l">#</th><th class="l">Mating pool</th><th>Mate</th><th>Cut</th><th class="l">New population</th><th>f(x)</th></tr></thead><tbody>';
+  for (let i = 0; i < 4; i++) {
+    const pr = cx && cx.pairs[i >> 1];
+    h += `<tr><td class="l">${i + 1}</td>${cell(sel && sel.pool[i], BOOK.pool[i])}${cell(cx ? (i ^ 1) + 1 : null, BOOK.mate[i])}${cell(pr ? pr.cut : null, BOOK.cut[i])}${cell(rep && rep.pop[i], BOOK.next[i])}${cell(rep && rep.ev.f[i], BOOK.f2[i])}</tr>`;
+  }
+  h += `</tbody><tfoot><tr><td class="lab" colspan="5">Sum</td>${cell(rep && rep.ev.sum, BOOK.sum2)}</tr><tr><td class="lab" colspan="5">Average</td>${cell(rep && rep.ev.avg, BOOK.avg2, rnd)}</tr><tr><td class="lab" colspan="5">Max</td>${cell(rep && rep.ev.max, BOOK.max2)}</tr></tfoot>`;
+  $('#vt2').innerHTML = h;
+  const pill = $('#verifyPill');
+  pill.textContent = `${pass} ✓${fail ? ` · ${fail} ✗` : ''}${pend ? ` · ${pend} pending` : ''}`;
+  pill.className = 'pill ' + (fail ? 'bad' : pend ? '' : 'ok');
+  const P = S.P, diffs = [];
+  if (P.selection !== 'roulette') diffs.push('selection is not roulette');
+  if (P.pc !== 1 && !(S.man.cuts.length >= 2)) diffs.push(`p<sub>c</sub> = ${P.pc} (book crosses every pair)`);
+  if (P.pm !== 0 && !S.man.muts.length) diffs.push(`p<sub>m</sub> = ${P.pm} (book has no flips)`);
+  if (P.elitism) diffs.push('elitism is on');
+  if (S.man.spins.length < 4 && P.selection === 'roulette') diffs.push('the spins come from the RNG, not the book-matching values');
+  $('#verifyWarn').innerHTML = diffs.length ? `<div class="warnbox">These settings differ from the textbook run: ${diffs.join('; ')}. Expect ✗ marks after that point. Click <b>✓ Hand-calc verification</b> to restore the book settings.</div>` : '';
+}
+
+/* =====================================================================
+   10. Compare runs
+   ===================================================================== */
+function sideForm(id, d){
+  return `<div class="card-head"><h2>Setting ${id}</h2><small>${id === 'A' ? 'blue' : 'orange'} lines</small></div>
+  <div class="two">
+    <div class="field"><label for="c${id}N">Population</label><input type="number" id="c${id}N" value="${d.N}" min="2" max="200"></div>
+    <div class="field"><label for="c${id}sel">Selection</label><select id="c${id}sel"><option value="roulette"${d.sel === 'roulette' ? ' selected' : ''}>Roulette</option><option value="tournament"${d.sel === 'tournament' ? ' selected' : ''}>Tournament</option></select></div>
+    <div class="field"><label for="c${id}pc"><span>Crossover p<sub>c</sub></span></label><input type="number" id="c${id}pc" value="${d.pc}" min="0" max="1" step="0.05"></div>
+    <div class="field"><label for="c${id}pm"><span>Mutation p<sub>m</sub></span></label><input type="number" id="c${id}pm" value="${d.pm}" min="0" max="1" step="0.001"></div>
+    <div class="field"><label for="c${id}k">Tournament k</label><input type="number" id="c${id}k" value="${d.k}" min="2" max="10"></div>
+    <div class="field" style="align-self:end"><label class="check"><input type="checkbox" id="c${id}el"${d.el ? ' checked' : ''}> Elitism</label></div>
+  </div>`;
+}
+let cmpResult = null;
+function readSide(id){
+  return {N: Math.max(2, Math.min(200, +$(`#c${id}N`).value | 0)), selection: $(`#c${id}sel`).value, pc: Math.max(0, Math.min(1, +$(`#c${id}pc`).value)),
+          pm: Math.max(0, Math.min(1, +$(`#c${id}pm`).value)), k: Math.max(2, Math.min(10, +$(`#c${id}k`).value | 0)), elitism: $(`#c${id}el`).checked};
+}
+function runCompare(){
+  const problem = $('#cProblem').value, prob = PROBLEMS[problem];
+  const L = Math.max(prob.minL, Math.min(prob.maxL, +$('#cL').value | 0)); $('#cL').value = L;
+  const seed = parseInt($('#cSeed').value, 10) || 0, gens = Math.max(1, Math.min(500, +$('#cGens').value | 0)), runs = Math.max(1, Math.min(30, +$('#cRuns').value | 0));
+  const opt = prob.optimum(L), t0 = performance.now();
+  const res = ['A', 'B'].map(id => {
+    const side = readSide(id), best = new Array(gens + 1).fill(0), avg = new Array(gens + 1).fill(0);
+    let finalBest = 0, finalAvg = 0, bestEver = 0, reached = 0, reachGenSum = 0;
+    for (let r = 0; r < runs; r++) {
+      const st = createState({problem, L, seed: seed + r, maxGen: gens, ...side});
+      runTo(st, gens);
+      st.hist.forEach((h, g) => { best[g] += h.best / runs; avg[g] += h.avg / runs; });
+      finalBest += st.hist[gens].best / runs; finalAvg += st.hist[gens].avg / runs; bestEver += st.best.f / runs;
+      const rg = st.hist.findIndex(h => h.best >= opt - 1e-9); if (rg >= 0) { reached++; reachGenSum += rg; }
+    }
+    return {id, side, best, avg, finalBest, finalAvg, bestEver, reached, reachGen: reached ? reachGenSum / reached : null};
+  });
+  cmpResult = {res, problem, L, gens, runs, opt};
+  $('#cmpTime').textContent = `${runs} run${runs > 1 ? 's' : ''} × ${gens} generations per side · ${(performance.now() - t0).toFixed(0)} ms`;
+  const fmt = v => problem === 'multipeak' ? v.toFixed(3) : String(+v.toFixed(2));
+  const desc = s => `N=${s.N}, ${s.selection === 'roulette' ? 'roulette' : 'tournament k=' + s.k}, p<sub>c</sub>=${s.pc}, p<sub>m</sub>=${s.pm}, elitism ${s.elitism ? 'on' : 'off'}`;
+  $('#cmpTable').innerHTML = `<thead><tr><th class="l">Setting</th><th class="l">Parameters</th><th>Final best</th><th>Final avg</th><th>Best ever</th><th>Reached optimum</th><th>Avg gen to optimum</th></tr></thead><tbody>` +
+    res.map(r => `<tr><td class="l"><span class="sw" style="background:${r.id === 'A' ? cssv('--s1') : cssv('--s2')}"></span>${r.id}</td><td class="l" style="font-family:inherit">${desc(r.side)}</td><td>${fmt(r.finalBest)}</td><td>${fmt(r.finalAvg)}</td><td>${fmt(r.bestEver)}</td><td>${r.reached}/${runs}</td><td>${r.reachGen == null ? '—' : r.reachGen.toFixed(1)}</td></tr>`).join('') + '</tbody>';
+  drawCompare();
+}
+function drawCompare(){
+  if (!cmpResult) return;
+  const {res, problem, gens, opt} = cmpResult, s1 = cssv('--s1'), s2 = cssv('--s2'), prob = PROBLEMS[problem];
+  $('#cmpLegend').innerHTML = `<span><i class="ln" style="border-color:${s1}"></i>A best</span><span><i class="ln dash" style="border-color:${s1}"></i>A avg</span><span><i class="ln" style="border-color:${s2}"></i>B best</span><span><i class="ln dash" style="border-color:${s2}"></i>B avg</span>`;
+  const ser = [];
+  res.forEach(r => { const c = r.id === 'A' ? s1 : s2; ser.push({name: `${r.id} best`, color: c, data: r.best.map((v, g) => [g, v])}, {name: `${r.id} avg`, color: c, dash: true, data: r.avg.map((v, g) => [g, v])}); });
+  lineChart($('#cmpChart'), $('#cmpTip'), {series: ser, xMax: gens, yMin: 0, ref: {y: opt, label: `optimum ${prob.fmtF(opt)}`}, endLabels: true, fmt: v => problem === 'multipeak' ? v.toFixed(3) : String(+v.toFixed(2))});
+}
+function syncCompareProblem(){
+  const prob = PROBLEMS[$('#cProblem').value], el = $('#cL');
+  el.min = prob.minL; el.max = prob.maxL; el.disabled = prob.minL === prob.maxL;
+  if (+el.value < prob.minL || +el.value > prob.maxL) el.value = prob.defL;
+}
+
+/* =====================================================================
+   12. Lecture mode: follows the course lecture notes exactly
+   ===================================================================== */
+const LFN = {
+  ex1: {title:'Example 1', goal:'min', vars:1, xmin:0,  xmax:15, tex:'f(x) = x² − 8x + 20',  f: x => x * x - 8 * x + 20, opt:'x* = 4, f = 4'},
+  ex2: {title:'Example 2', goal:'min', vars:1, xmin:-8, xmax:7,  tex:'f(x) = x² + 2x + 3',   f: x => x * x + 2 * x + 3,  opt:'x* = −1, f = 2'},
+  ex3: {title:'Example 3', goal:'max', vars:1, xmin:0,  xmax:15, tex:'f(x) = 15x − x²',      f: x => 15 * x - x * x,     opt:'x* = 7.5, f = 56.25'},
+  ex4: {title:'Example 4', goal:'max', vars:1, xmin:-8, xmax:7,  tex:'f(x) = −x² + 2x + 50', f: x => -x * x + 2 * x + 50, opt:'x* = 1, f = 51'},
+  mv1: {title:'Multi-variable Example 1', goal:'min', vars:2, xmin:0, xmax:15, tex:'f(x₁, x₂) = (x₁ − 3)² + (x₂ − 5)² + 2', f: (a, b) => (a - 3) ** 2 + (b - 5) ** 2 + 2, opt:'(x₁*, x₂*) = (3, 5), f = 2'},
+};
+const LPRESETS = {
+  'ex1-4':{fn:'ex1', m:4}, 'ex1-5':{fn:'ex1', m:5}, 'ex2-4':{fn:'ex2', m:4}, 'ex2-5':{fn:'ex2', m:5},
+  'ex3-4':{fn:'ex3', m:4}, 'ex3-5':{fn:'ex3', m:5}, 'ex4-4':{fn:'ex4', m:4}, 'ex4-5':{fn:'ex4', m:5},
+  'mv1-4':{fn:'mv1', m:4}, 'mv1-5':{fn:'mv1', m:5},
+};
+/* Numbers transcribed from the lecture notes. r = selection spins, cx = [r_c, k|null] per pair,
+   mut = [child, bit from left, r_m] for every flipped bit. e = the notes' table values. */
+const NOTES = {
+  'ex1-4': { src:'GA_Lecture_Notes.pdf, Section 7.2 (pp. 6–8)', init:['0111','1010','0001','1000'], gens:[
+    { r:[0.921,0.694,0.437,0.995], cx:[[0.771,2],[0.616,1]], mut:[[2,2,0.023],[3,2,0.020]],
+      e:{ s:['0111','1010','0001','1000'], D:[[7],[10],[1],[8]], f:[13,40,13,20], F:[.0714,.0244,.0714,.0476], p:[.3324,.1135,.3324,.2216], q:[.3324,.4459,.7784,1], Np:[1.33,.45,1.33,.89], sumF:.2149,
+          pick:[4,3,2,4], pool:['1000','0001','1010','1000'], cross:['Yes','Yes'], k:[2,1], children:['1001','0000','1000','1010'], flip:['none','2','2','none'], next:['1001','0100','1100','1010'] } },
+    { r:[0.820,0.075,0.197,0.674], cx:[[0.803,null],[0.658,3]], mut:[],
+      e:{ s:['1001','0100','1100','1010'], D:[[9],[4],[12],[10]], f:[29,4,68,40], F:[.0333,.2,.0145,.0244], p:[.1225,.7347,.0532,.0896], q:[.1225,.8572,.9104,1], Np:[.49,2.94,.21,.36], sumF:.2722,
+          pick:[2,1,2,2], pool:['0100','1001','0100','0100'], cross:['No','Yes'], k:[null,3], children:['0100','1001','0100','0100'], flip:['none','none','none','none'], next:['0100','1001','0100','0100'] } },
+    { r:[0.716,0.982,0.003,0.070], cx:[[0.599,3],[0.222,3]], mut:[[4,4,0.037]],
+      e:{ s:['0100','1001','0100','0100'], D:[[4],[9],[4],[4]], f:[4,29,4,4], F:[.2,.0333,.2,.2], p:[.3158,.0526,.3158,.3158], q:[.3158,.3684,.6842,1], Np:[1.26,.21,1.26,1.26], sumF:.6333,
+          pick:[4,4,1,1], pool:['0100','0100','0100','0100'], cross:['Yes','Yes'], k:[3,3], children:['0100','0100','0100','0100'], flip:['none','none','none','4'], next:['0100','0100','0100','0101'] } },
+  ], final:{ s:['0100','0100','0100','0101'], D:[[4],[4],[4],[5]], f:[4,4,4,5], F:[.2,.2,.2,.1667] } },
+  'ex1-5': { src:'GA_Lecture_Notes.pdf, Section 7.3 (p. 9)', init:['01101','11010','10010','11001'], gens:[
+    { r:[0.980,0.370,0.880,0.710], cx:[[0.697,2],[0.669,4]], mut:[],
+      e:{ s:['01101','11010','10010','11001'], D:[[13],[26],[18],[25]], x:[[6.29],[12.581],[8.71],[12.097]], f:[9.246,77.627,26.181,69.558], F:[.0976,.0127,.0368,.0142], p:[.6052,.0789,.2281,.0879], q:[.6052,.6840,.9121,1], Np:[2.42,.32,.91,.35], sumF:.1613, avgF:45.653,
+          pick:[4,1,3,3], pool:['11001','01101','10010','10010'], cross:['Yes','Yes'], k:[2,4], children:['11101','01001','10010','10010'], flip:['none','none','none','none'], next:['11101','01001','10010','10010'] } },
+  ] },
+  'mv1-4': { src:'GA_MultiVariable_Lecture_Notes.pdf, Example 1, 4 bits per variable (pp. 6–8)', init:['00100111','00010011','10010001','01100001'], gens:[
+    { r:[0.136,0.589,0.110,0.333], cx:[[0.406,4],[0.964,null]], mut:[[1,1,0.033]],
+      e:{ s:['00100111','00010011','10010001','01100001'], D:[[2,7],[1,3],[9,1],[6,1]], f:[7,10,54,27], F:[.125,.0909,.0182,.0357], p:[.4633,.3369,.0674,.1324], q:[.4633,.8002,.8676,1], Np:[1.85,1.35,.27,.53], sumF:.2698, avgF:24.5,
+          pick:[1,2,1,1], pool:['00100111','00010011','00100111','00100111'], cross:['Yes','No'], k:[4,null], lies:['between x1 and x2','—'], children:['00100011','00010111','00100111','00100111'],
+          flip:['1 (x1, weight 8)','none','none','none'], next:['10100011','00010111','00100111','00100111'] } },
+    { r:[0.766,0.422,0.559,0.130], cx:[[0.068,5],[0.880,null]], mut:[[2,4,0.041],[2,7,0.032],[3,3,0.048]],
+      e:{ s:['10100011','00010111','00100111','00100111'], D:[[10,3],[1,7],[2,7],[2,7]], f:[55,10,7,7], F:[.0179,.0909,.125,.125], p:[.0498,.2534,.3484,.3484], q:[.0498,.3032,.6516,1], Np:[.2,1.01,1.39,1.39], sumF:.3588, avgF:19.75,
+          pick:[4,3,3,2], pool:['00100111','00100111','00100111','00010111'], cross:['Yes','No'], k:[5,null], lies:['inside x2','—'], children:['00100111','00100111','00100111','00010111'],
+          flip:['none','4 (x1, weight 1); 7 (x2, weight 2)','3 (x1, weight 2)','none'], next:['00100111','00110101','00000111','00010111'] } },
+    { r:[0.474,0.431,0.651,0.961], cx:[[0.524,7],[0.309,6]], mut:[],
+      e:{ s:['00100111','00110101','00000111','00010111'], D:[[2,7],[3,5],[0,7],[1,7]], f:[7,2,15,10], F:[.125,.3333,.0625,.0909], p:[.2043,.5449,.1022,.1486], q:[.2043,.7492,.8514,1], Np:[.82,2.18,.41,.59], sumF:.6117, avgF:8.5,
+          pick:[2,2,2,4], pool:['00110101','00110101','00110101','00010111'], cross:['Yes','Yes'], k:[7,6], lies:['inside x2','inside x2'], children:['00110101','00110101','00110111','00010101'],
+          flip:['none','none','none','none'], next:['00110101','00110101','00110111','00010101'] } },
+  ], final:{ s:['00110101','00110101','00110111','00010101'], D:[[3,5],[3,5],[3,7],[1,5]], f:[2,2,6,6], F:[.3333,.3333,.1429,.1429], avgF:4 } },
+  'mv1-5': { src:'GA_MultiVariable_Lecture_Notes.pdf, Example 1, 5 bits per variable (pp. 9–10)', init:['1011111111','1001011000','1101110111','0011101010'], gens:[
+    { r:[0.367,0.290,0.231,0.797], cx:[[0.737,4],[0.293,4]], mut:[[4,6,0.001],[4,8,0.033]],
+      e:{ s:['1011111111','1001011000','1101110111','0011101010'], D:[[23,31],[18,24],[27,23],[7,10]], x:[[11.129,15],[8.71,11.613],[13.065,11.129],[3.387,4.839]], f:[168.081,78.331,140.86,2.176], F:[.0059,.0126,.007,.3149], p:[.0174,.037,.0207,.9249], q:[.0174,.0544,.0751,1], Np:[.07,.15,.08,3.7], sumF:.3404, avgF:97.362,
+          pick:[4,4,4,4], pool:['0011101010','0011101010','0011101010','0011101010'], cross:['Yes','Yes'], k:[4,4], lies:['inside x1','inside x1'], children:['0011101010','0011101010','0011101010','0011101010'],
+          flip:['none','none','none','6 (x2, weight 16); 8 (x2, weight 4)'], next:['0011101010','0011101010','0011101010','0011111110'] } },
+    { r:[0.420,0.306,0.818,0.208], cx:[[0.137,3],[0.977,null]], mut:[[4,1,0.025]],
+      e:{ s:['0011101010','0011101010','0011101010','0011111110'], D:[[7,10],[7,10],[7,10],[7,30]], x:[[3.387,4.839],[3.387,4.839],[3.387,4.839],[3.387,14.516]], f:[2.176,2.176,2.176,92.707], F:[.3149,.3149,.3149,.0107], p:[.3296,.3296,.3296,.0112], q:[.3296,.6592,.9888,1], Np:[1.32,1.32,1.32,.04], sumF:.9553, avgF:24.809,
+          pick:[2,1,3,1], pool:['0011101010','0011101010','0011101010','0011101010'], cross:['Yes','No'], k:[3,null], lies:['inside x1','—'], children:['0011101010','0011101010','0011101010','0011101010'],
+          flip:['none','none','none','1 (x1, weight 16)'], next:['0011101010','0011101010','0011101010','1011101010'] } },
+  ] },
+};
+/* Best grid point per encoding, from the notes' "Best value each encoding can represent" tables. */
+const NOTES_BEST = {
+  'ex1-4':['0100','4','4'], 'ex1-5':['01000','3.871','4.017'], 'ex2-4':['0111','-1','2'], 'ex2-5':['01110','-1.226','2.051'],
+  'ex3-4':['0111','7','56'], 'ex3-5':['01111','7.258','56.191'], 'ex4-4':['1001','1','51'], 'ex4-5':['10011','1.194','50.963'],
+  'mv1-4':['00110101','3, 5','2'], 'mv1-5':['0011001010','2.903, 4.839','2.035'],
+};
+const LSTEP = ['Evaluate the fitness value', 'Selection mechanism (roulette wheel)', 'Crossover operator', 'Mutation operator'];
+const LEC = { reveal: 1, run: null, cfg: null, lastReveal: 0 };
+const f4 = v => v.toFixed(4), f2 = v => v.toFixed(2);
+const f3t = v => { const s = String(+v.toFixed(3)); return s === '-0' ? '0' : s; };
+const lsp = (s, m) => s.match(new RegExp(`.{1,${m}}`, 'g')).join(' ');
+const sub = n => String(n).replace(/\d/g, d => '₀₁₂₃₄₅₆₇₈₉'[d]);
+
+function lecShift(c){
+  if (c.fn.goal !== 'max') return 0;
+  let mn = Infinity; const n = c.vars === 1 ? 3000 : 300;
+  const pt = i => c.xmin + (c.xmax - c.xmin) * i / n;
+  if (c.vars === 1) for (let i = 0; i <= n; i++) mn = Math.min(mn, c.fn.f(pt(i)));
+  else for (let i = 0; i <= n; i++) for (let j = 0; j <= n; j++) mn = Math.min(mn, c.fn.f(pt(i), pt(j)));
+  return mn < 0 ? Math.ceil(-mn - 1e-9) + 1 : 0;
+}
+function lecMakeConfig(key, o = {}){
+  const pr = LPRESETS[key], fn = LFN[pr.fn];
+  const c = { key, fn, vars: fn.vars, m: o.m ?? pr.m, xmin: o.xmin ?? fn.xmin, xmax: o.xmax ?? fn.xmax,
+              N: o.N ?? 4, pc: o.pc ?? 0.8, pm: o.pm ?? 0.05, G: o.G ?? 3, seed: o.seed ?? 1 };
+  c.L = c.vars * c.m; c.dx = (c.xmax - c.xmin) / (2 ** c.m - 1); c.C = lecShift(c);
+  c.isDefault = c.m === pr.m && c.xmin === fn.xmin && c.xmax === fn.xmax && c.N === 4 && c.pc === 0.8 && c.pm === 0.05;
+  return c;
+}
+function lecDecode(s, c){
+  const D = [], x = [];
+  for (let j = 0; j < c.vars; j++) { const d = parseInt(s.slice(j * c.m, (j + 1) * c.m), 2); D.push(d); x.push(c.xmin + c.dx * d); }
+  const f = c.fn.f(...x), F = c.fn.goal === 'min' ? 1 / (1 + f) : f + c.C;
+  return {s, D, x, f, F};
+}
+function lecEval(pop, c){
+  const rows = pop.map(s => lecDecode(s, c)), N = rows.length;
+  const sumF = rows.reduce((a, r) => a + r.F, 0);
+  let q = 0, best = 0, sumf = 0;
+  rows.forEach((r, i) => { r.p = sumF > 0 ? r.F / sumF : 1 / N; q += r.p; r.q = q; r.Np = r.p * N; sumf += r.f; if (r.F > rows[best].F) best = i; });
+  rows[N - 1].q = 1;
+  return {rows, sumF, best, avgF: sumf / N};
+}
+function lecBest(c){
+  if (c.L > 16) return null;
+  let best = null;
+  for (let i = 0; i < 2 ** c.L; i++) {
+    const r = lecDecode(i.toString(2).padStart(c.L, '0'), c);
+    if (!best || (c.fn.goal === 'min' ? r.f < best.f - 1e-12 : r.f > best.f + 1e-12)) best = r;
+  }
+  return best;
+}
+const lecLies = (p, c) => !p.cross || c.vars === 1 ? '—' : p.k % c.m === 0 ? `between x${p.k / c.m} and x${p.k / c.m + 1}` : `inside x${Math.floor(p.k / c.m) + 1}`;
+const lecVarOf = (bit, c) => ({v: Math.floor((bit - 1) / c.m) + 1, w: 2 ** (c.m - 1 - (bit - 1) % c.m)});
+const lecFlipText = (row, c) => row.flips.length ? row.flips.map(f => { if (c.vars === 1) return String(f.bit); const {v, w} = lecVarOf(f.bit, c); return `${f.bit} (x${v}, weight ${w})`; }).join('; ') : 'none';
+
+/* Run G generations from the exam sheet. Blank entries are drawn from the seeded RNG, rounded to 3 decimals like the notes. */
+function lecRun(c, sheet){
+  const st = {rng: seedToState(c.seed)}, N = c.N, L = c.L, issues = [];
+  const draw3 = () => +rngNext(st).toFixed(3);
+  let rngCount = 0, pop;
+  if (sheet.init) pop = sheet.init.slice();
+  else { pop = []; for (let i = 0; i < N; i++) { let s = ''; for (let j = 0; j < L; j++) s += rngNext(st) < 0.5 ? '1' : '0'; pop.push(s); } }
+  const gens = [];
+  for (let g = 0; g < c.G; g++) {
+    const ev = lecEval(pop, c), sh = sheet.gens[g] || {r: [], cx: [], mut: null};
+    const spins = [];
+    for (let s = 0; s < N; s++) {
+      let r = sh.r[s], src = 'typed';
+      if (r == null) { r = draw3(); src = 'rng'; rngCount++; }
+      let idx = ev.rows.findIndex(row => row.q >= r); if (idx < 0) idx = N - 1;
+      spins.push({r, src, idx});
+    }
+    const pool = spins.map(sp => pop[sp.idx]), pairs = [], children = [];
+    for (let i = 0, pi = 0; i + 1 < N; i += 2, pi++) {
+      const e = sh.cx[pi] || [];
+      let rc = e[0], rcSrc = 'typed';
+      if (rc == null) { rc = draw3(); rcSrc = 'rng'; rngCount++; }
+      const cross = rc < c.pc; let k = null, kSrc = null;
+      if (cross) {
+        k = e[1]; kSrc = 'typed';
+        if (k == null) { k = 1 + Math.floor(rngNext(st) * (L - 1)); kSrc = 'rng'; rngCount++; }
+        if (k < 1 || k > L - 1) { issues.push(`Generation ${g + 1}, pair ${pi + 1}: cut k = ${k} must be between 1 and ${L - 1}.`); k = Math.max(1, Math.min(L - 1, k)); }
+      } else if (e[1] != null) issues.push(`Generation ${g + 1}, pair ${pi + 1}: r_c = ${rc} ≥ p_c = ${c.pc}, so the cut k = ${e[1]} is ignored (no crossover).`);
+      const a = pool[i], b = pool[i + 1];
+      const c1 = cross ? a.slice(0, k) + b.slice(k) : a, c2 = cross ? b.slice(0, k) + a.slice(k) : b;
+      pairs.push({a, b, ia: spins[i].idx, ib: spins[i + 1].idx, rc, rcSrc, cross, k, kSrc, c1, c2});
+      children.push(c1, c2);
+    }
+    if (N % 2) children.push(pool[N - 1]);
+    const muts = children.map(ch => ({before: ch, flips: [], auto: !sh.mut}));
+    if (sh.mut) {
+      for (const [ci, b, rm] of sh.mut) {
+        const row = muts[ci - 1];
+        if (!row || b < 1 || b > L) { issues.push(`Generation ${g + 1}: mutation ${ci}:${b} is out of range (child 1..${N}, bit 1..${L}).`); continue; }
+        if (rm != null && rm >= c.pm) issues.push(`Generation ${g + 1}: child ${ci} bit ${b} has r_m = ${rm} ≥ p_m = ${c.pm}; under the rule it would not flip.`);
+        if (!row.flips.some(f => f.bit === b)) row.flips.push({bit: b, rm, src: 'typed'});
+      }
+    } else {
+      for (const row of muts) for (let b = 1; b <= L; b++) { const rm = draw3(); rngCount++; if (rm < c.pm) row.flips.push({bit: b, rm, src: 'rng'}); }
+    }
+    for (const row of muts) {
+      row.flips.sort((x, y) => x.bit - y.bit);
+      const arr = row.before.split(''); for (const f of row.flips) arr[f.bit - 1] = arr[f.bit - 1] === '1' ? '0' : '1';
+      row.after = arr.join('');
+    }
+    const next = muts.map(r => r.after);
+    gens.push({pop, ev, spins, pool, pairs, children, muts, next});
+    pop = next;
+  }
+  return {gens, final: lecEval(pop, c), finalPop: pop, issues, rngCount, initRng: !sheet.init};
+}
+
+/* Compare a run against the notes' tables, value by value at the notes' precision. */
+function lecVerify(run, c){
+  const n = NOTES[c.key]; if (!n) return null;
+  let pass = 0, fail = 0;
+  const sp = s => lsp(s, c.m), j = a => a.join(', ');
+  const row = (label, comp, book, fmt = String) => ({label, items: book.map((b, i) => {
+    const v = comp[i], sv = v == null ? '—' : fmt(v), sb = b == null ? '—' : fmt(b), ok = sv === sb;
+    ok ? pass++ : fail++; return {v: sv, b: sb, ok};
+  })});
+  const evRows = (ev, e, pop) => {
+    const R = [row('String', pop, e.s, sp)];
+    if (e.D) R.push(row(c.vars > 1 ? 'D₁, D₂' : 'D', ev.rows.map(r => r.D), e.D, j));
+    if (e.x) R.push(row(c.vars > 1 ? 'x₁, x₂' : 'x', ev.rows.map(r => r.x), e.x, a => a.map(f3t).join(', ')));
+    R.push(row('f', ev.rows.map(r => r.f), e.f, f3t));
+    R.push(row('F', ev.rows.map(r => r.F), e.F, f4));
+    if (e.p) { R.push(row('pᵢ', ev.rows.map(r => r.p), e.p, f4)); R.push(row('qᵢ', ev.rows.map(r => r.q), e.q, f4)); R.push(row('N·pᵢ', ev.rows.map(r => r.Np), e.Np, f2)); }
+    if (e.sumF != null) R.push(row('Sum F', [ev.sumF], [e.sumF], f4));
+    if (e.avgF != null) R.push(row('Average f', [ev.avgF], [e.avgF], f3t));
+    return R;
+  };
+  const sections = [];
+  run.gens.forEach((G, g) => {
+    const ng = n.gens[g]; if (!ng) return; const e = ng.e;
+    const R = evRows(G.ev, e, G.pop);
+    R.push(row('Selected #', G.spins.map(s => s.idx + 1), e.pick));
+    R.push(row('Mating pool', G.pool, e.pool, sp));
+    R.push(row('Crossover?', G.pairs.map(p => p.cross ? 'Yes' : 'No'), e.cross));
+    R.push(row('Cut k', G.pairs.map(p => p.cross ? p.k : null), e.k));
+    if (e.lies) R.push(row('Cut lies', G.pairs.map(p => lecLies(p, c)), e.lies));
+    R.push(row('Children', G.children, e.children, sp));
+    R.push(row(c.vars > 1 ? 'Mutated bit (variable, weight)' : 'Mutated bit(s)', G.muts.map(m => lecFlipText(m, c)), e.flip));
+    R.push(row('New generation', G.next, e.next, sp));
+    sections.push({title: `Generation ${g + 1}`, rows: R});
+  });
+  if (n.final && c.G === n.gens.length) sections.push({title: 'Final evaluation', rows: evRows(run.final, n.final, run.finalPop)});
+  return {sections, pass, fail, src: n.src, covered: n.gens.length};
+}
+
+/* ---------- lecture UI ---------- */
+function lecConfig(){
+  const num = (id, d) => { const v = parseFloat($(id).value); return Number.isFinite(v) ? v : d; };
+  const key = $('#lPreset').value, pr = LPRESETS[key], fn = LFN[pr.fn];
+  let xmin = num('#lXmin', fn.xmin), xmax = num('#lXmax', fn.xmax);
+  if (xmax <= xmin) xmax = xmin + 1;
+  return lecMakeConfig(key, { m: Math.max(2, Math.min(10, Math.round(num('#lM', pr.m)))), xmin, xmax,
+    N: Math.max(2, Math.min(8, Math.round(num('#lN', 4)))), pc: Math.max(0, Math.min(1, num('#lPc', 0.8))),
+    pm: Math.max(0, Math.min(1, num('#lPm', 0.05))), G: Math.max(1, Math.min(8, Math.round(num('#lG', 3)))), seed: Math.round(num('#lSeed', 1)) });
+}
+function lecBuildSheet(G, N){
+  const keep = {}; document.querySelectorAll('#lSheet input').forEach(i => keep[i.id] = i.value);
+  let h = `<thead><tr><th class="l">Generation</th><th class="l">Selection r (${N} values)</th><th class="l">Crossover r<sub>c</sub> k (per pair)</th><th class="l">Mutation child:bit=r<sub>m</sub></th></tr></thead><tbody>`;
+  for (let g = 0; g < G; g++) h += `<tr><td>${g + 1}</td><td><input type="text" id="lR${g}" placeholder="e.g. 0.921, 0.694, 0.437, 0.995" autocomplete="off"></td><td><input type="text" id="lC${g}" placeholder="e.g. 0.771 2, 0.616 1" autocomplete="off"></td><td><input type="text" id="lMu${g}" placeholder="e.g. 2:2=0.023  or none" autocomplete="off"></td></tr>`;
+  $('#lSheet').innerHTML = h + '</tbody>';
+  for (const id in keep) { const el = document.getElementById(id); if (el) el.value = keep[id]; }
+}
+function lecReadSheet(c){
+  const issues = [], bad = new Set(), gens = [];
+  let init = null;
+  const raw = $('#lInit').value.replace(/[\s,;]+/g, '');
+  if (raw) {
+    if (!/^[01]+$/.test(raw) || raw.length !== c.N * c.L) { issues.push(`Initial population: expected ${c.N} strings of ${c.L} bits (${c.N * c.L} bits in total); got ${raw.length}. Using the seeded RNG instead.`); bad.add('lInit'); }
+    else init = raw.match(new RegExp(`.{${c.L}}`, 'g'));
+  }
+  for (let g = 0; g < c.G; g++) {
+    const gs = {r: [], cx: [], mut: null};
+    const rv = ($(`#lR${g}`)?.value || '').trim();
+    if (rv) {
+      const vals = rv.split(/[\s,;]+/).filter(Boolean).map(Number);
+      if (vals.some(v => !(v >= 0 && v < 1))) { issues.push(`Generation ${g + 1}: every selection r must be in [0, 1).`); bad.add(`lR${g}`); }
+      else { if (vals.length > c.N) { issues.push(`Generation ${g + 1}: ${vals.length} spins given, only ${c.N} used.`); bad.add(`lR${g}`); } gs.r = vals.slice(0, c.N); }
+    }
+    const cv = ($(`#lC${g}`)?.value || '').trim();
+    if (cv) for (const item of cv.split(/[,;]/).map(s => s.trim()).filter(Boolean)) {
+      const t = item.split(/[\s\/]+/), rc = Number(t[0]), k = t[1] == null || /^[-–—]+$/.test(t[1]) ? null : Number(t[1]);
+      if (!(rc >= 0 && rc < 1) || (k != null && !Number.isInteger(k))) { issues.push(`Generation ${g + 1}: crossover item "${item}" should look like "0.771 2" (r_c, then cut k).`); bad.add(`lC${g}`); gs.cx.push([]); }
+      else gs.cx.push([rc, k]);
+    }
+    const mv = ($(`#lMu${g}`)?.value || '').trim();
+    if (/^none$/i.test(mv)) gs.mut = [];
+    else if (mv) {
+      gs.mut = [];
+      for (const item of mv.split(/[\s,;]+/).filter(Boolean)) {
+        const m = /^(\d+):(\d+)(?:=(0?\.\d+|0|1))?$/.exec(item);
+        if (!m) { issues.push(`Generation ${g + 1}: mutation item "${item}" should look like "2:2=0.023".`); bad.add(`lMu${g}`); continue; }
+        gs.mut.push([+m[1], +m[2], m[3] == null ? null : Number(m[3])]);
+      }
+    }
+    gens.push(gs);
+  }
+  return {init, gens, issues, bad};
+}
+function lecLoadNotes(){
+  const n = NOTES[$('#lPreset').value]; if (!n) return;
+  const c = lecConfig();
+  $('#lInit').value = n.init.map(s => lsp(s, c.m)).join(', ');
+  for (let g = 0; g < c.G; g++) {
+    const ng = n.gens[g];
+    $(`#lR${g}`).value = ng ? ng.r.map(v => v.toFixed(3)).join(', ') : '';
+    $(`#lC${g}`).value = ng ? ng.cx.map(([rc, k]) => `${rc.toFixed(3)} ${k == null ? '-' : k}`).join(', ') : '';
+    $(`#lMu${g}`).value = ng ? (ng.mut.length ? ng.mut.map(([a, b, r]) => `${a}:${b}=${r.toFixed(3)}`).join(', ') : 'none') : '';
+  }
+}
+function lecApplyPreset(loadNotes = true){
+  const key = $('#lPreset').value, pr = LPRESETS[key], fn = LFN[pr.fn];
+  $('#lN').value = 4; $('#lG').value = 3; $('#lPc').value = 0.8; $('#lPm').value = 0.05;
+  $('#lXmin').value = fn.xmin; $('#lXmax').value = fn.xmax; $('#lM').value = pr.m;
+  $('#lMLabel').textContent = fn.vars > 1 ? 'Bits per variable m' : 'Bits L';
+  $('#lDec').value = '';
+  ['#lInit'].forEach(s => $(s).value = '');
+  lecBuildSheet(3, 4);
+  document.querySelectorAll('#lSheet input').forEach(i => i.value = '');
+  $('#lLoadNotes').disabled = !NOTES[key];
+  if (loadNotes && NOTES[key]) lecLoadNotes();
+  LEC.reveal = 1; LEC.lastReveal = 0;
+  lecRender();
+}
+function lecStr(s, c, o = {}){
+  let h = `<span class="bits lbits${s.length > 7 ? ' compact' : ''}">`;
+  for (let j = 0; j < s.length; j++) {
+    if (o.cut && j === o.cut) h += '<span class="cut"></span>';
+    if (j && j % c.m === 0 && c.vars > 1) h += '<span class="seg"></span>';
+    let cls = 'b' + s[j];
+    if (o.origin) cls += (o.cut && j >= o.cut) ? (o.origin === 'A' ? ' ob' : ' oa') : (o.origin === 'A' ? ' oa' : ' ob');
+    if (o.flips && o.flips.includes(j + 1)) cls += ' flip';
+    h += `<i class="${cls}">${s[j]}</i>`;
+  }
+  return h + '</span>';
+}
+const rngTag = src => src === 'rng' ? '<span class="tag rng">rng</span>' : '';
+function lecFHead(c){ return c.fn.goal === 'min' ? 'F = 1/(1 + f)' : c.C ? `F = f + ${c.C}` : 'F = f'; }
+function lecPoint(r, c){ return c.vars > 1 ? `(${r.x.map(f3t).join(', ')})` : `x = ${f3t(r.x[0])}`; }
+function lecEvalTable(ev, c, full = true){
+  const V = c.vars, dh = V > 1 ? Array.from({length: V}, (_, j) => `<th>D${sub(j + 1)}</th>`).join('') : '<th>D</th>';
+  const xh = V > 1 ? Array.from({length: V}, (_, j) => `<th>x${sub(j + 1)}</th>`).join('') : '<th>x</th>';
+  let h = `<div class="table-wrap"><table><thead><tr><th class="l">#</th><th class="l">String</th>${dh}${xh}<th>f${V > 1 ? '' : '(x)'}</th><th>${lecFHead(c)}</th>${full ? '<th>p<sub>i</sub></th><th>q<sub>i</sub></th><th>N·p<sub>i</sub></th>' : ''}</tr></thead><tbody>`;
+  ev.rows.forEach((r, i) => {
+    h += `<tr class="${i === ev.best ? 'best' : ''}"><td class="l">${i + 1}</td><td class="l">${lecStr(r.s, c)}</td>${r.D.map(d => `<td>${d}</td>`).join('')}${r.x.map(x => `<td>${f3t(x)}</td>`).join('')}<td>${f3t(r.f)}</td><td>${f4(r.F)}</td>`;
+    if (full) h += `<td>${f4(r.p)}</td><td>${f4(r.q)}</td><td>${f2(r.Np)}</td>`;
+    h += '</tr>';
+  });
+  h += `</tbody><tfoot><tr><td class="lab" colspan="${2 + 2 * V + 1}">Sum</td><td>${f4(ev.sumF)}</td>${full ? `<td>${f4(1)}</td><td></td><td>${f2(ev.rows.length)}</td>` : ''}</tr></tfoot></table></div>`;
+  const b = ev.rows[ev.best];
+  h += `<p class="lnote">Best string: <code>${lsp(b.s, c.m)}</code> ${c.vars > 1 ? '= ' : ', '}${lecPoint(b, c)}, f = ${f3t(b.f)}. Average f = ${f3t(ev.avgF)}.</p>`;
+  return h;
+}
+function lecPie(ev, spins){
+  const R = 62, cx = 75, cy = 75, pal = isDark() ? PAL_D : PAL_L, TAU = Math.PI * 2;
+  let a0 = -Math.PI / 2, h = `<svg class="lpie" viewBox="0 0 150 150" width="150" height="150" role="img" aria-label="Roulette wheel with spin positions">`;
+  ev.rows.forEach((r, i) => {
+    const a1 = a0 + r.p * TAU, col = pal[i % pal.length];
+    if (r.p > 0.9999) h += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="${col}"/>`;
+    else if (r.p > 0) {
+      const x0 = cx + R * Math.cos(a0), y0 = cy + R * Math.sin(a0), x1 = cx + R * Math.cos(a1), y1 = cy + R * Math.sin(a1);
+      h += `<path d="M${cx},${cy} L${x0.toFixed(2)},${y0.toFixed(2)} A${R},${R} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${x1.toFixed(2)},${y1.toFixed(2)} Z" fill="${col}" stroke="var(--surface)" stroke-width="1.5"/>`;
+    }
+    if (r.p > 0.07) { const am = (a0 + a1) / 2; h += `<text x="${(cx + R * 0.62 * Math.cos(am)).toFixed(1)}" y="${(cy + R * 0.62 * Math.sin(am)).toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="700" fill="#fff" stroke="rgba(0,0,0,.45)" stroke-width="2.5" paint-order="stroke">#${i + 1}</text>`; }
+    a0 = a1;
+  });
+  spins.forEach((s, j) => {
+    const a = -Math.PI / 2 + s.r * TAU, c1 = Math.cos(a), s1 = Math.sin(a);
+    h += `<line x1="${(cx + (R - 8) * c1).toFixed(1)}" y1="${(cy + (R - 8) * s1).toFixed(1)}" x2="${(cx + (R + 5) * c1).toFixed(1)}" y2="${(cy + (R + 5) * s1).toFixed(1)}" stroke="var(--text)" stroke-width="2"/>`;
+    h += `<text x="${(cx + (R + 10) * c1).toFixed(1)}" y="${(cy + (R + 10) * s1).toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-size="9" fill="var(--text-2)">${j + 1}</text>`;
+  });
+  return h + '</svg>';
+}
+function lecStepHTML(G, g, s, c){
+  const id = `ls${g}-${s}`, isNew = LEC.reveal > LEC.lastReveal && g * 4 + s + 1 > LEC.lastReveal;
+  let h = `<div class="lstep${isNew ? ' new' : ''}" id="${id}"><h3><span class="n">${s + 1}</span><span>Step ${s + 1}. ${LSTEP[s]}${s === 2 ? ` (single point, p<sub>c</sub> = ${c.pc})` : s === 3 ? ` (bit flip, p<sub>m</sub> = ${c.pm})` : ''}</span></h3>`;
+  if (s === 0) h += lecEvalTable(G.ev, c);
+  else if (s === 1) {
+    h += `<div class="lsel"><div class="table-wrap"><table><thead><tr><th>Spin</th><th>Random number r</th><th>Selected string # (first q<sub>i</sub> ≥ r)</th><th class="l">Why</th><th class="l">Mating pool</th></tr></thead><tbody>`;
+    G.spins.forEach((sp, j) => {
+      const q = G.ev.rows[sp.idx].q, qp = sp.idx > 0 ? G.ev.rows[sp.idx - 1].q : null;
+      const why = `q${sub(sp.idx + 1)} = ${f4(q)} ≥ ${sp.r.toFixed(3)}` + (qp != null ? `, q${sub(sp.idx)} = ${f4(qp)} &lt; r` : ' (first string)');
+      h += `<tr><td>${j + 1}</td><td>${sp.r.toFixed(3)}${rngTag(sp.src)}</td><td class="hl">${sp.idx + 1}</td><td class="why">${why}</td><td class="l">${lecStr(G.pool[j], c)}</td></tr>`;
+    });
+    const cnt = G.ev.rows.map((_, i) => G.spins.filter(sp => sp.idx === i).length);
+    h += `</tbody></table></div>${lecPie(G.ev, G.spins)}</div><p class="lnote">Copies in the mating pool: ${cnt.map((n, i) => `#${i + 1} × ${n} (expected ${f2(G.ev.rows[i].Np)})`).join(', ')}.</p>`;
+  } else if (s === 2) {
+    const multi = c.vars > 1;
+    h += `<div class="table-wrap"><table><thead><tr><th>Pair</th><th class="l">Parent 1</th><th class="l">Parent 2</th><th>r<sub>c</sub></th><th class="l">Crossover?</th><th>Cut k</th>${multi ? '<th class="l">Cut lies</th>' : ''}<th class="l">Child 1</th><th class="l">Child 2</th></tr></thead><tbody>`;
+    G.pairs.forEach((p, k) => {
+      const cut = p.cross ? p.k : 0;
+      h += `<tr><td>${k + 1}<br><small>(#${2 * k + 1}, #${2 * k + 2})</small></td><td class="l">${lecStr(p.a, c, {cut, origin: p.cross ? 'A' : null})}</td><td class="l">${lecStr(p.b, c, {cut, origin: p.cross ? 'B' : null})}</td><td>${p.rc.toFixed(3)}${rngTag(p.rcSrc)}</td>` +
+        `<td class="l" style="font-family:inherit">${p.cross ? `Yes <small>(${p.rc.toFixed(3)} &lt; ${c.pc})</small>` : `No <small>(r<sub>c</sub> ≥ ${c.pc})</small>`}</td><td>${p.cross ? p.k + rngTag(p.kSrc) : '—'}</td>${multi ? `<td class="l" style="font-family:inherit">${lecLies(p, c)}</td>` : ''}` +
+        `<td class="l">${lecStr(p.c1, c, {cut, origin: p.cross ? 'A' : null})}</td><td class="l">${lecStr(p.c2, c, {cut, origin: p.cross ? 'B' : null})}</td></tr>`;
+    });
+    h += '</tbody></table></div>';
+    if (c.N % 2) h += `<p class="lnote">String ${c.N} has no partner and is copied unchanged.</p>`;
+    h += `<p class="lnote">Children: ${G.children.map(s2 => `<code>${lsp(s2, c.m)}</code>`).join(', ')}.${multi ? ' A cut between segments swaps whole variables; a cut inside a segment builds a new value for that variable from the head of one parent and the tail of the other.' : ''}</p>`;
+  } else {
+    const multi = c.vars > 1, auto = G.muts[0] && G.muts[0].auto;
+    h += `<p class="lnote" style="margin:0 0 8px">${auto ? 'r<sub>m</sub> was drawn for every bit; only' : 'Only'} bits with r<sub>m</sub> &lt; ${c.pm} are listed; every other bit had r<sub>m</sub> ≥ ${c.pm} and was left unchanged.</p>`;
+    h += `<div class="table-wrap"><table><thead><tr><th>Child #</th><th class="l">Before</th><th class="l">Mutated bit(s), from left${multi ? ' (variable, weight)' : ''}</th><th>r<sub>m</sub></th><th class="l">After</th></tr></thead><tbody>`;
+    G.muts.forEach((m, i) => {
+      const fl = m.flips.map(f => f.bit);
+      let what = lecFlipText(m, c);
+      if (multi && m.flips.length) what += '<br><small>' + m.flips.map(f => { const {v, w} = lecVarOf(f.bit, c); return `x${sub(v)} moves by ${w}·Δx = ${f3t(w * c.dx)}`; }).join('; ') + '</small>';
+      h += `<tr><td>${i + 1}</td><td class="l">${lecStr(m.before, c)}</td><td class="l" style="font-family:inherit">${what}</td><td>${m.flips.length ? m.flips.map(f => (f.rm == null ? '?' : f.rm.toFixed(3)) + rngTag(f.src)).join(', ') : '—'}</td><td class="l">${lecStr(m.after, c, {flips: fl})}</td></tr>`;
+    });
+    h += `</tbody></table></div><p class="lnote">Expected flips E<sub>m</sub> = N·L·p<sub>m</sub> = ${c.N}·${c.L}·${c.pm} = ${f2(c.N * c.L * c.pm)}; this generation: ${G.muts.reduce((a, m) => a + m.flips.length, 0)}.</p>`;
+    h += `<p class="lnote"><b>New generation:</b> ${G.next.map(s2 => `<code>${lsp(s2, c.m)}</code>`).join(multi ? '; ' : ', ')}.</p>`;
+  }
+  return h + '</div>';
+}
+function lecFinalHTML(run, c){
+  const isNew = LEC.reveal > LEC.lastReveal && c.G * 4 + 1 > LEC.lastReveal;
+  const ev = run.final, b = ev.rows[ev.best];
+  let h = `<section class="card lgen${isNew ? ' lstep new' : ''}" id="lsFinal"><h2 class="gh">${c.m}-bit${c.vars > 1 ? ' per variable' : ''}, Final Evaluation and Stop</h2><div>${lecEvalTable(ev, c, false)}</div>`;
+  h += `<p class="lnote">Stop test: ${c.G} of ${c.G} generations completed → <b>Yes</b> → Stop.<br><b>Result:</b> best string <code>${lsp(b.s, c.m)}</code>, ${c.vars > 1 ? `(x₁, x₂) = ${lecPoint(b, c)}` : lecPoint(b, c)}, f = ${f3t(b.f)}. True optimum: ${c.fn.opt}.</p>`;
+  h += `<div class="subtable-title">Convergence summary</div><div class="table-wrap"><table><thead><tr><th class="l">Population</th><th class="l">Best string</th><th class="l">Best point</th><th>Best f</th><th>Average f</th></tr></thead><tbody>`;
+  [...run.gens.map((G, g) => [String(g + 1), G.ev]), ['Final', ev]].forEach(([lab, e]) => {
+    const r = e.rows[e.best];
+    h += `<tr><td class="l">${lab}</td><td class="l mono">${lsp(r.s, c.m)}</td><td class="l">${c.vars > 1 ? lecPoint(r, c) : f3t(r.x[0])}</td><td>${f3t(r.f)}</td><td>${f3t(e.avgF)}</td></tr>`;
+  });
+  return h + '</tbody></table></div></section>';
+}
+function lecEncHTML(c){
+  const rng = c.xmax - c.xmin, den = 2 ** c.m - 1, best = lecBest(c), nb = NOTES_BEST[c.key];
+  const fr = Number.isInteger(rng) ? `${rng}/${den}` : `${f3t(rng)}/${den}`;
+  let fit = c.fn.goal === 'min' ? 'F = 1/(1 + f)  (minimise)' : c.C ? `F = f + ${c.C}  (maximise, f can be negative: C = ${c.C} ≥ −min f)` : 'F = f  (maximise, f ≥ 0)';
+  return `<div class="enc">
+    <span>Objective</span><b>${c.fn.goal === 'min' ? 'minimise' : 'maximise'} ${c.fn.tex}</b>
+    <span>Bounds</span><b>${c.xmin} ≤ ${c.vars > 1 ? 'x₁, x₂' : 'x'} ≤ ${c.xmax}</b>
+    <span>Chromosome</span><b>L = ${c.vars > 1 ? `${c.vars} × ${c.m} = ` : ''}${c.L} bits</b>
+    <span>Search space</span><b>2^${c.L} = ${(2 ** c.L).toLocaleString()}</b>
+    <span>Decode</span><b>D = Σ bᵢ·2ⁱ (i = 0 rightmost)</b>
+    <span>Map</span><b>x = ${c.xmin} + (${fr})·D</b>
+    <span>Resolution</span><b>Δx = ${fr} = ${c.dx.toFixed(3)}</b>
+    <span>Precision</span><b>|x̂ − x*| ≤ Δx/2 = ${(c.dx / 2).toFixed(3)}</b>
+    <span>Fitness</span><b>${fit}</b>
+    <span>E<sub>m</sub></span><b>N·L·p_m = ${f2(c.N * c.L * c.pm)} flips/gen</b>
+    <span>True optimum</span><b>${c.fn.opt}</b>
+    ${best ? `<span>Best grid point</span><b>${lsp(best.s, c.m)} → ${lecPoint(best, c)}, f = ${f3t(best.f)}${nb && c.isDefault ? (best.s === nb[0] ? ' ✓ notes' : ' ✗ notes: ' + nb[0]) : ''}</b>` : ''}
+  </div>`;
+}
+function lecDecodeOut(){
+  const c = LEC.cfg, raw = $('#lDec').value.replace(/\s+/g, ''), out = $('#lDecOut');
+  $('#lDec').placeholder = 'e.g. ' + lsp('0'.repeat(c.L - 2) + '11', c.m);
+  if (!raw) { out.innerHTML = ''; return; }
+  if (!/^[01]+$/.test(raw) || raw.length !== c.L) { out.innerHTML = `<span style="color:var(--bad)">Enter exactly ${c.L} bits.</span>`; return; }
+  const r = lecDecode(raw, c);
+  const lines = r.D.map((d, j) => {
+    const seg = raw.slice(j * c.m, (j + 1) * c.m);
+    const terms = [...seg].map((bit, i) => `${bit}·${2 ** (c.m - 1 - i)}`).join(' + ');
+    return `${c.vars > 1 ? `x${sub(j + 1)}: ` : ''}<code>${seg}</code> → D = ${terms} = <b>${d}</b> → x = ${c.xmin} + ${c.dx.toFixed(3)}·${d} = <b>${f3t(r.x[j])}</b>`;
+  });
+  out.innerHTML = lines.join('<br>') + `<br>f = <b>${f3t(r.f)}</b>, ${lecFHead(c)} = <b>${f4(r.F)}</b>`;
+}
+function lecRenderVerify(v, c){
+  const el = $('#lVerify');
+  if (!v) { el.hidden = true; return; }
+  el.hidden = false;
+  const tot = v.pass + v.fail;
+  let h = `<div class="card-head"><h2>Verification against the lecture notes</h2><span class="pill ${v.fail ? 'bad' : 'ok'}">${v.pass}/${tot} ✓${v.fail ? ` · ${v.fail} ✗` : ''}</span></div>`;
+  h += `<p class="desc" style="margin-top:0">Source: ${v.src}. Each chip is the value computed from <i>your</i> numbers, rounded like the notes (x and f to 3 decimals, F, p, q to 4, N·p to 2). A red chip shows the notes' value underneath.${!c.isDefault ? ' <b>Your settings differ from the notes</b>, so mismatches are expected.' : ''}${v.covered < c.G ? ` The notes pages cover generations 1–${v.covered} only, so later generations are not checked.` : ''}</p>`;
+  v.sections.forEach((s, i) => {
+    let sp = 0, sf = 0; s.rows.forEach(r => r.items.forEach(it => it.ok ? sp++ : sf++));
+    h += `<details class="vsec"${i === 0 || sf ? ' open' : ''}><summary>${s.title} <span class="pill ${sf ? 'bad' : 'ok'}">${sp}/${sp + sf} ✓</span></summary>`;
+    h += s.rows.map(r => `<div class="vr"><span class="vl">${r.label}</span><span class="vchips">${r.items.map(it => `<span class="vchip ${it.ok ? '' : 'bad'}" title="notes: ${it.b}"><b>${it.v}</b>${it.ok ? '' : `<small>notes: ${it.b}</small>`}</span>`).join('')}</span></div>`).join('');
+    h += '</details>';
+  });
+  el.innerHTML = h;
+}
+function lecRender(){
+  const c = LEC.cfg = lecConfig();
+  if (document.querySelectorAll('#lSheet tbody tr').length !== c.G) lecBuildSheet(c.G, c.N);
+  const sh = lecReadSheet(c), run = LEC.run = lecRun(c, sh);
+  document.querySelectorAll('#lSheet input, #lInit').forEach(i => i.classList.toggle('bad', sh.bad.has(i.id)));
+  const issues = [...sh.issues, ...run.issues], st = $('#lStatus');
+  const notesKey = NOTES[c.key];
+  st.className = 'status' + (issues.length ? ' err' : '');
+  st.innerHTML = (issues.length ? issues.map(s => '⚠ ' + s).join('<br>') + '<br>' : '') +
+    (run.rngCount || run.initRng ? `${run.initRng ? 'Initial population and ' : ''}${run.rngCount} random number${run.rngCount === 1 ? '' : 's'} drawn from seed ${c.seed} for blank cells.` : 'All random numbers come from the sheet.') +
+    (notesKey ? '' : ' The notes pages provided do not include a worked run for this example, so type your own numbers or use the seed.');
+  const fn = c.fn;
+  $('#lDesc').innerHTML = `${fn.title}: ${fn.goal === 'min' ? 'minimise' : 'maximise'} ${fn.tex} on [${fn.xmin}, ${fn.xmax}]${fn.vars > 1 ? ' for both variables' : ''}. ${notesKey ? `Worked numbers available from ${notesKey.src}.` : ''}`;
+  const pill = $('#lSetPill'); pill.textContent = c.isDefault ? 'as in notes' : 'modified'; pill.className = 'pill' + (c.isDefault ? ' ok' : '');
+  $('#lEnc').innerHTML = lecEncHTML(c); lecDecodeOut();
+  lecRenderVerify(lecVerify(run, c), c);
+  // progressive output
+  const total = c.G * 4 + 1;
+  LEC.reveal = Math.max(1, Math.min(total, LEC.reveal));
+  let out = '';
+  run.gens.forEach((G, g) => {
+    const vis = Math.min(4, LEC.reveal - g * 4); if (vis <= 0) return;
+    out += `<section class="card lgen" id="lg${g}"><h2 class="gh">${c.m}-bit${c.vars > 1 ? ' per variable' : ''}, Generation ${g + 1}${g === 0 && run.initRng ? ' <span class="tag rng">rng initial population</span>' : ''}</h2>`;
+    for (let s = 0; s < vis; s++) out += lecStepHTML(G, g, s, c);
+    out += '</section>';
+  });
+  if (LEC.reveal === total) out += lecFinalHTML(run, c);
+  $('#lOut').innerHTML = out;
+  const g = Math.min(c.G, Math.floor((LEC.reveal - 1) / 4)), s = (LEC.reveal - 1) % 4;
+  $('#lBadge').textContent = LEC.reveal === total ? 'Final evaluation and stop' : `Generation ${g + 1} · Step ${s + 1}: ${LSTEP[s].replace(/ \(.*\)/, '')}`;
+  $('#lProg').innerHTML = Array.from({length: total}, (_, i) => `<i class="${i < LEC.reveal ? 'on' : ''}${i && i % 4 === 0 ? ' gap' : ''}" title="${i === total - 1 ? 'Final' : `Gen ${Math.floor(i / 4) + 1}, step ${i % 4 + 1}`}"></i>`).join('');
+  $('#lPrev').disabled = LEC.reveal <= 1; $('#lNext').disabled = LEC.reveal >= total;
+  const scrollTo = LEC.reveal > LEC.lastReveal && LEC.lastReveal > 0;
+  LEC.lastReveal = LEC.reveal;
+  if (scrollTo) { const el = LEC.reveal === total ? $('#lsFinal') : document.getElementById(`ls${g}-${s}`); if (el) el.scrollIntoView({behavior: 'smooth', block: 'nearest'}); }
+}
+function lecStep(d){ LEC.reveal += d; lecRender(); }
+function lecInit(){
+  $('#lPreset').addEventListener('change', () => lecApplyPreset(true));
+  ['#lN', '#lG', '#lPc', '#lPm', '#lXmin', '#lXmax', '#lM', '#lSeed'].forEach(s => $(s).addEventListener('input', () => { LEC.lastReveal = LEC.reveal; lecRender(); }));
+  $('#lSheet').addEventListener('input', () => { LEC.lastReveal = LEC.reveal; lecRender(); });
+  $('#lInit').addEventListener('input', () => { LEC.lastReveal = LEC.reveal; lecRender(); });
+  $('#lDec').addEventListener('input', lecDecodeOut);
+  $('#lLoadNotes').addEventListener('click', () => { lecApplyPreset(true); });
+  $('#lClear').addEventListener('click', () => { $('#lInit').value = ''; document.querySelectorAll('#lSheet input').forEach(i => i.value = ''); LEC.lastReveal = LEC.reveal; lecRender(); });
+  $('#lNext').addEventListener('click', () => lecStep(1));
+  $('#lPrev').addEventListener('click', () => lecStep(-1));
+  $('#lAll').addEventListener('click', () => { LEC.lastReveal = 1e9; LEC.reveal = 1e9; lecRender(); });
+  $('#lRestart').addEventListener('click', () => { LEC.reveal = 1; LEC.lastReveal = 0; lecRender(); window.scrollTo({top: 0, behavior: 'smooth'}); });
+  lecApplyPreset(true);
+}
+
+/* =====================================================================
+   11. Wiring
+   ===================================================================== */
+function showTab(tab){
+  ['explore', 'compare', 'lecture'].forEach(t => { $('#' + t).hidden = tab !== t; $('#tab' + t[0].toUpperCase() + t.slice(1)).setAttribute('aria-selected', tab === t); });
+  if (tab === 'compare') { stopPlay(); if (!cmpResult) runCompare(); else drawCompare(); }
+  else if (tab === 'lecture') { stopPlay(); LEC.lastReveal = LEC.reveal; lecRender(); }
+  else render();
+}
+function enterVerify(){
+  showTab('explore');
+  $('#problem').value = 'goldberg'; applyProblemDefaults();
+  $('#popSize').value = 4; $('#pc').value = 1; $('#pm').value = 0; $('#selection').value = 'roulette'; $('#elitism').checked = false; $('#seed').value = 1;
+  $('#mInit').value = BOOK.init.join(' '); $('#mSpins').value = BOOK.spins.join(', '); $('#mCuts').value = BOOK.cuts.join(', '); $('#mMuts').value = '';
+  $('#manualCard').open = true;
+  syncOutputs(); reset();
+  $('#verifyCard').scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+function init(){
+  applyProblemDefaults(); syncOutputs();
+  $('#sideA').innerHTML = sideForm('A', {N: 20, sel: 'roulette', pc: 0.7, pm: 0.01, k: 2, el: false});
+  $('#sideB').innerHTML = sideForm('B', {N: 20, sel: 'tournament', pc: 0.7, pm: 0.01, k: 2, el: true});
+  $('#cProblem').value = 'onemax'; syncCompareProblem();
+
+  $('#problem').addEventListener('change', () => { applyProblemDefaults(); ['#mInit', '#mSpins', '#mCuts', '#mMuts'].forEach(s => $(s).value = ''); syncOutputs(); reset(); });
+  ['#popSize', '#chromLen', '#pc', '#pm', '#tk'].forEach(s => { $(s).addEventListener('input', syncOutputs); $(s).addEventListener('change', reset); });
+  ['#selection', '#elitism', '#seed', '#maxGen'].forEach(s => $(s).addEventListener('change', () => { syncOutputs(); reset(); }));
+  $('#speed').addEventListener('input', syncOutputs);
+  $('#diceBtn').addEventListener('click', () => { $('#seed').value = Math.floor(Math.random() * 100000); reset(); });
+  $('#playBtn').addEventListener('click', play);
+  $('#stepBtn').addEventListener('click', () => { stopPlay(); stepForward(); });
+  $('#backBtn').addEventListener('click', stepBack);
+  $('#resetBtn').addEventListener('click', reset);
+  $('#applyManual').addEventListener('click', reset);
+  $('#clearManual').addEventListener('click', () => { ['#mInit', '#mSpins', '#mCuts', '#mMuts'].forEach(s => $(s).value = ''); reset(); });
+  $('#verifyBtn').addEventListener('click', enterVerify);
+  $('#whyToggle').addEventListener('change', e => { UI.why = e.target.checked; renderCaption(false); });
+  $('#rerunChecks').addEventListener('click', runSelfChecks);
+  document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+  $('#cRun').addEventListener('click', runCompare);
+  $('#cProblem').addEventListener('change', syncCompareProblem);
+
+  attachChartHover($('#chart'), renderChart);
+  attachChartHover($('#cmpChart'), drawCompare);
+  $('#curve').addEventListener('pointermove', curveHover);
+  $('#curve').addEventListener('pointerleave', () => $('#curveTip').hidden = true);
+
+  document.addEventListener('keydown', e => {
+    if (e.target.closest('input,select,textarea') || e.ctrlKey || e.metaKey || e.altKey || !$('#compare').hidden) return;
+    if (!$('#lecture').hidden) {
+      if (e.key === 'ArrowRight') { e.preventDefault(); lecStep(1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); lecStep(-1); }
+      return;
+    }
+    if (e.key === ' ') { e.preventDefault(); play(); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); stopPlay(); stepForward(); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); stepBack(); }
+    else if (e.key === 'r' || e.key === 'R') reset();
+  });
+  let rz; const onResize = () => { clearTimeout(rz); rz = setTimeout(() => { if (!$('#explore').hidden) { if (!UI.anim) renderSelection(false); renderCurve(); renderChart(); } else drawCompare(); }, 60); };
+  new ResizeObserver(onResize).observe(document.body);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!$('#explore').hidden) render(); else if (!$('#lecture').hidden) lecRender(); else drawCompare(); });
+
+  lecInit();
+  runSelfChecks();
+  reset();
+}
+init();
+</script>
+</body>
+</html>
