@@ -4,15 +4,23 @@ An interactive, single-page tool for learning the **Genetic Algorithm (GA)** by 
 fitness evaluation, roulette-wheel or tournament selection, crossover, mutation and replacement. Each phase shows the
 full data table and a plain-language caption.
 
+A **Lecture mode** reproduces the worked examples from the course lecture notes exactly: the same settings, encoding,
+table columns and random numbers. A verification panel ticks every value against the notes.
+
 It is **one `index.html` file** with plain HTML, CSS and JavaScript. It has no dependencies, no build step and no network requests.
 
-> **Live demo:** `https://<your-username>.github.io/<repo-name>/` *(placeholder; update after deploying)*
+> **Live demo:** <https://v-ajay-chandra-24.github.io/ga-visualizer/>
 
-![Screenshot: Explore view](docs/screenshot-explore.png)
-![Screenshot: Hand-calc verification](docs/screenshot-verify.png)
-![Screenshot: Compare runs](docs/screenshot-compare.png)
+### Screenshots
 
-*(Screenshot placeholders: add your own PNGs under `docs/`.)*
+**Explore:** step through each phase with the roulette wheel, data tables, the population plotted on f(x), and the fitness chart.
+![Explore view](docs/Explore.png)
+
+**Hand-calc verification:** Goldberg's x² example, with each computed value ticked against the textbook.
+![Hand-calc verification](docs/Hand_clac.png)
+
+**Compare runs:** two parameter settings on the same seed, charted side by side.
+![Compare runs](docs/Compare_runs.png)
 
 ---
 
@@ -96,9 +104,35 @@ using the notes' conventions:
   **Load notes' numbers** fills in the notes' worked runs:
   Example 1 4-bit (generations 1–3 + final), Example 1 5-bit (generation 1), and two-variable Example 1 4+4 bits (generations 1–3 + final)
   and 5+5 bits (generations 1–2).
-- **Verification panel:** every value computed from *your* numbers is compared with the notes' table at the notes' precision,
-  with a green ✓ or a red ✗ plus the notes' value. With the notes' numbers loaded, all values match:
-  175/175 (Ex. 1 4-bit), 185/185 (two-variable 4-bit), 120/120 (two-variable 5-bit), and all of Ex. 1 5-bit generation 1.
+- **Verification panel:** every value computed from *your* numbers is compared with the notes' table at the notes' precision
+  (x and f to 3 decimals; F, p<sub>i</sub>, q<sub>i</sub> to 4; N·p<sub>i</sub> to 2). Each value gets a green ✓, or a red ✗ with the notes' value underneath.
+
+#### Verification table from the lecture notes
+
+With **Load notes' numbers**, Lecture mode reproduces every worked table in the notes. These are also run as self-checks on page load:
+
+| Worked run | Source in the notes | Generations checked | Values matched |
+|---|---|---|---|
+| Ex. 1: min x² − 8x + 20, 4-bit | `GA_Lecture_Notes.pdf` §7.2, pp. 6–8 | 1, 2, 3 + final | **175 / 175 ✓** |
+| Ex. 1: min x² − 8x + 20, 5-bit | `GA_Lecture_Notes.pdf` §7.3, p. 9 | 1 | **58 / 58 ✓** |
+| Multi Ex. 1: min (x₁ − 3)² + (x₂ − 5)² + 2, 4+4 bits | `GA_MultiVariable_Lecture_Notes.pdf`, pp. 6–8 | 1, 2, 3 + final | **185 / 185 ✓** |
+| Multi Ex. 1: min (x₁ − 3)² + (x₂ − 5)² + 2, 5+5 bits | `GA_MultiVariable_Lecture_Notes.pdf`, pp. 9–10 | 1, 2 | **120 / 120 ✓** |
+
+Each generation checks: strings, D, x, f, F, p<sub>i</sub>, q<sub>i</sub>, N·p<sub>i</sub>, sum F, average f (where the notes give it),
+the selected string for each spin, the mating pool, crossover yes/no, cut k, where the cut lies (multi-variable), the children,
+the mutated bits (with variable and weight), and the new generation.
+
+The best grid point for all 10 encodings also matches the notes' "Best value each encoding can represent" table:
+
+| Example | 4-bit best string → x, f | 5-bit best string → x, f |
+|---|---|---|
+| 1: min x² − 8x + 20 on [0, 15] | `0100` → 4, 4 | `01000` → 3.871, 4.017 |
+| 2: min x² + 2x + 3 on [−8, 7] | `0111` → −1, 2 | `01110` → −1.226, 2.051 |
+| 3: max 15x − x² on [0, 15] | `0111` → 7, 56 | `01111` → 7.258, 56.191 |
+| 4: max −x² + 2x + 50 on [−8, 7] (F = f + 31) | `1001` → 1, 51 | `10011` → 1.194, 50.963 |
+| Multi 1: min (x₁ − 3)² + (x₂ − 5)² + 2 | `0011 0101` → (3, 5), 2 | `00110 01010` → (2.903, 4.839), 2.035 |
+
+Worked detail for the generation the notes start with:
 
 | Example 1, 4-bit, generation 1 (notes p. 6) | Value |
 |---|---|
